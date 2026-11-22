@@ -1,0 +1,27 @@
+{
+  "sami": {
+    "name": "Sami Ben Ali",
+    "file": "assets/avatars/sami.png",
+    "size": 256
+  },
+  "yassine": {
+    "name": "Yassine Trabelsi",
+    "file": "assets/avatars/yassine.png",
+    "size": 96
+  },
+  "mariem": {
+    "name": "Mariem Gharbi",
+    "file": "assets/avatars/mariem.png",
+    "size": 96
+  },
+  "oussama": {
+    "name": "Oussama Khelifi",
+    "file": "assets/avatars/oussama.png",
+    "size": 96
+  },
+  "nour": {
+    "name": "Nour Jlassi",
+    "file": "assets/avatars/nour.png",
+    "size": 96
+  }
+}
