@@ -4,16 +4,18 @@
    the shell, so most markup only needs data-* attributes.
    Every visible word goes through t() / plural() from i18n.js. */
 
-import { PRODUCTS, CATEGORIES, HERO, NEW_DROPS, RECENT, NOTIFICATIONS, STORE, PAYMENT_METHODS, ACCENTS, AVATARS } from './data.js?v=20261123c';
-import { LANGS, t, plural, blurb, word, faq, lang, setLang, isRTL } from './i18n.js?v=20261123c';
+import { PRODUCTS, CATEGORIES, HERO, NEW_DROPS, RECENT, NOTIFICATIONS, STORE, PAYMENT_METHODS, ACCENTS, AVATARS } from './data.js?v=20261124a';
+import { LANGS, t, plural, blurb, word, faq, lang, setLang, isRTL } from './i18n.js?v=20261124a';
 import {
   $, $$, byId, tnd, esc, catLabel, subLabel, subsOf, avatarSrc, payLabel, fmtDate, go, ICON, state,
   cartQty, cartTotal, setQty, addToCart, markViewed, clearViewed, unreadCount, markRead, noteText,
   saveProfile, savePrefs, calm, allOrders, getOrder, orderTotal, orderSubtotal, orderFee, orderCount, placeOrder,
   paymentFee, feeLabel,
   deliveryType, credential, searchProducts, media, heartBtn, tile, toast, exportData, resetEverything,
-  familyOf, familyVariants, familyLead, familyTile, regionOf, valueOf, topupMethod, FAMILY_CATS
-} from './core.js?v=20261123c';
+  familyOf, familyVariants, familyLead, familyTile, regionOf, valueOf, topupMethod, FAMILY_CATS,
+  isListed, listed, sectionHidden, secTitle
+} from './core.js?v=20261124a';
+import { PAGE_SECTIONS } from './data.js?v=20261124a';
 
 /* Where a subcategory link goes: brands (gift cards, mobile games) open their
    product page, where region and value are picked; others open the shop. */
@@ -24,11 +26,11 @@ const subHref = (cat, sub, s = {}) => FAMILY_CATS.includes(cat) && familyLead(su
 const dlvText = p => t(deliveryType(p) === 'topup' && topupMethod(p) !== 'id' ? 'dlv.login' : 'dlv.' + deliveryType(p));
 
 /* ── shared page pieces ────────────────────────────────────────────── */
-const crumbs = list => `<nav class="crumbs" aria-label="${esc(t('crumbs'))}">${list.map(([label, href], i) =>
+export const crumbs = list => `<nav class="crumbs" aria-label="${esc(t('crumbs'))}">${list.map(([label, href], i) =>
   href && i < list.length - 1 ? `<a href="${href}">${esc(label)}</a>` : `<span aria-current="page">${esc(label)}</span>`
 ).join('<i aria-hidden="true">/</i>')}</nav>`;
 
-const pageHead = (title, sub = '', trail = null, aside = '') => `
+export const pageHead = (title, sub = '', trail = null, aside = '') => `
   <header class="page-head">
     <div>
       ${trail ? crumbs(trail) : ''}
@@ -38,14 +40,14 @@ const pageHead = (title, sub = '', trail = null, aside = '') => `
     ${aside}
   </header>`;
 
-const emptyState = (icon, title, text, cta = '') => `
+export const emptyState = (icon, title, text, cta = '') => `
   <div class="empty-state">${icon}<h2>${esc(title)}</h2><p>${text}</p>${cta}</div>`;
 
 const statusPill = s => `<span class="pill pill-${s}">${esc(t(s === 'delivered' ? 'st.delivered' : 'st.processing'))}</span>`;
 
 const mask = s => s.replace(/[A-Za-z0-9](?=.{4})/g, '•');
 
-const field = (id, label, value = '', type = 'text', extra = '') => `
+export const field = (id, label, value = '', type = 'text', extra = '') => `
   <div class="field">
     <label for="${id}">${esc(label)}</label>
     <input id="${id}" name="${id}" type="${type}" value="${esc(value)}" ${extra}>
@@ -119,12 +121,12 @@ const chevron = d => `<svg class="dir" width="16" height="16" viewBox="0 0 24 24
 const home = {
   title: () => t('home.title'),
   render: () => `
-    <div class="main">
+    <div class="main${sectionHidden('drops') && sectionHidden('recent') ? ' no-left' : ''}">
       <div class="col-left">
-        <section class="card" style="display:flex;flex-direction:column;min-height:0">
+        <section class="card" style="display:flex;flex-direction:column;min-height:0" ${sectionHidden('drops') ? 'hidden' : ''}>
           <div class="card-head">
             <span class="flame">🔥</span>
-            <h2>${esc(t('home.newDrops'))}</h2>
+            <h2>${esc(secTitle('drops', 'home.newDrops'))}</h2>
             <div class="sort">
               <button class="sort-btn" id="sortBtn" aria-expanded="false">
                 ${esc(t('home.sortBy'))} <b id="sortLabel">${esc(t('sort.new'))}</b>
@@ -137,15 +139,15 @@ const home = {
           </div>
           <div class="drops" id="drops"></div>
         </section>
-        <section class="card">
-          <div class="card-head"><h2>${esc(t('home.recent'))}</h2></div>
+        <section class="card" ${sectionHidden('recent') ? 'hidden' : ''}>
+          <div class="card-head"><h2>${esc(secTitle('recent', 'home.recent'))}</h2></div>
           <div class="recent" id="recent"></div>
         </section>
       </div>
 
       <div class="col-right">
-        <section class="hero" id="hero" aria-roledescription="carousel" aria-label="${esc(t('home.featured'))}">
-          <span class="badge">🔥 ${esc(t('home.trending'))}</span>
+        <section class="hero" id="hero" aria-roledescription="carousel" aria-label="${esc(t('home.featured'))}" ${sectionHidden('hero') || !listed(HERO).length ? 'hidden' : ''}>
+          <span class="badge">🔥 ${esc(secTitle('hero', 'home.trending'))}</span>
           <div class="hero-ticks" id="ticks"></div>
           <div class="hero-nav">
             <button id="prev" aria-label="${esc(t('prev'))}">${chevron('prev')}</button>
@@ -153,13 +155,13 @@ const home = {
           </div>
         </section>
 
-        <section>
+        <section ${sectionHidden('shelf') ? 'hidden' : ''}>
           <div class="shelf-head">
-            <h2 id="shelfTitle">${esc(t('home.youMightLike'))}</h2>
+            <h2 id="shelfTitle">${esc(secTitle('shelf', 'home.youMightLike'))}</h2>
             <a class="see-all" id="seeAll" href="#/shop">${esc(t('home.seeAll'))}</a>
           </div>
           <div class="shelf" id="shelf">
-            ${PRODUCTS.filter(p => !HERO.includes(p.id) && p.cat === 'games').slice(0, 10).map(tile).join('')}
+            ${(PAGE_SECTIONS.shelf.length ? listed(PAGE_SECTIONS.shelf) : PRODUCTS.filter(p => !HERO.includes(p.id) && p.cat === 'games').slice(0, 10)).map(tile).join('')}
           </div>
         </section>
       </div>
@@ -170,7 +172,7 @@ const home = {
 
     /* ── hero carousel ── */
     const hero = $('#hero', el), ticks = $('#ticks', el);
-    const slides = HERO.map(id => byId[id]).filter(Boolean);
+    const slides = listed(HERO);
     const DWELL = 7000;
     let cur = 0, timer = null;
 
@@ -256,7 +258,7 @@ const home = {
     /* ── new drops ── */
     let by = 'new';
     const drops = () => {
-      $('#drops', el).innerHTML = sortList(NEW_DROPS.map(id => byId[id]).filter(Boolean), by).map(p => `
+      $('#drops', el).innerHTML = sortList(listed(NEW_DROPS), by).map(p => `
         <article class="drop" data-view="${p.id}">
           ${media(p, 'shot')}
           <div class="drop-meta">
@@ -293,7 +295,7 @@ const home = {
       r.note === 'viewedYesterday' ? t('home.viewedYesterday') : t('home.viewedRecently');
     const recent = state.viewed.length ? state.viewed.slice(0, 4).map(id => ({ id, note: 'viewed' })) : RECENT;
     $('#recent', el).innerHTML = recent.map(r => {
-      const p = byId[r.id];
+      const p = isListed(r.id) && byId[r.id];
       return p ? `<div class="recent-row" data-view="${p.id}" role="link" tabindex="0">
         ${media(p, 'thumb')}
         <span class="txt"><b>${esc(p.short)}</b><span>${esc(recentNote(r))}</span></span>
@@ -443,9 +445,9 @@ function variantPicker(p) {
 }
 
 const product = {
-  title: ctx => byId[ctx.params[0]]?.short || t('pdp.notFound'),
+  title: ctx => (isListed(ctx.params[0]) && byId[ctx.params[0]]?.short) || t('pdp.notFound'),
   render(ctx) {
-    const p = byId[ctx.params[0]];
+    const p = isListed(ctx.params[0]) && byId[ctx.params[0]];
     if (!p) return notFound.render();
     const fam = familyOf(p);
     // a brand page suggests other brands; anything else suggests its neighbours
@@ -484,12 +486,12 @@ const product = {
           </div>
         </div>
 
-        <section class="block">
+        <section class="block" ${sectionHidden('pdp.how') ? 'hidden' : ''}>
           <h2>${esc(t('pdp.how'))}</h2>
           <ol class="steps">${howItWorks(p).map(([ti, d], i) => `<li><span class="step-n">${i + 1}</span><div><b>${esc(ti)}</b><p>${esc(d)}</p></div></li>`).join('')}</ol>
         </section>
 
-        <section class="block">
+        <section class="block" ${sectionHidden('pdp.details') ? 'hidden' : ''}>
           <h2>${esc(t('pdp.details'))}</h2>
           <dl class="spec-table">
             <div><dt>${esc(t('spec.product'))}</dt><dd>${esc(p.name)}</dd></div>
@@ -503,7 +505,7 @@ const product = {
           </dl>
         </section>
 
-        <section class="block">
+        <section class="block" ${sectionHidden('pdp.related') ? 'hidden' : ''}>
           ${fam
             ? `<div class="block-head"><h2>${esc(t('pdp.otherBrands'))}</h2><a class="see-all" href="#/shop/${p.cat}">${esc(t('pdp.moreIn', { cat: catLabel(p.cat) }))}</a></div>
                <div class="grid-tiles">${related.map(familyTile).join('')}</div>`
@@ -513,7 +515,7 @@ const product = {
       </div>`;
   },
   mount(el, ctx) {
-    const p = byId[ctx.params[0]];
+    const p = isListed(ctx.params[0]) && byId[ctx.params[0]];
     if (!p) return;
     markViewed(p.id);
     let qty = 1;
@@ -972,7 +974,7 @@ const SECTIONS = [
   ['profile', ICON.user], ['security', ICON.lock], ['notifications', ICON.bell], ['appearance', ICON.palette], ['privacy', ICON.shield]
 ];
 
-const toggle = (attr, yes, label) =>
+export const toggle = (attr, yes, label) =>
   `<label class="switch"><input type="checkbox" ${attr} ${yes ? 'checked' : ''}><span aria-hidden="true"></span><span class="sr">${esc(label)}</span></label>`;
 
 const setRow = (title, desc, control) =>

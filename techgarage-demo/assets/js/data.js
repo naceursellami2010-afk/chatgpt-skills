@@ -872,9 +872,9 @@ export const PRODUCTS = [
 export const CATEGORIES = [
   { id: 'all' },
   { id: 'games',    subs: ['accounts', 'keys', 'topups', 'ps'] },
-  { id: 'cards',    subs: ['steam', 'playstation', 'itunes', 'xbox', 'valorant', 'lol', 'fortnite', 'razer', 'nintendo',
+  { id: 'cards',    grouped: true, subs: ['steam', 'playstation', 'itunes', 'xbox', 'valorant', 'lol', 'fortnite', 'razer', 'nintendo',
                            'battlenet', 'marvel', 'epic', 'binance', 'redotpay', 'bybit', 'ufl'] },
-  { id: 'mobile',   subs: ['efootball', 'pubg', 'freefire', 'codm', 'coc', 'clashroyale', 'brawlstars', 'roblox', 'genshin',
+  { id: 'mobile',   grouped: true, subs: ['efootball', 'pubg', 'freefire', 'codm', 'coc', 'clashroyale', 'brawlstars', 'roblox', 'genshin',
                            'wildrift', 'fcmobile', 'mlbb', 'hsr', 'wuwa', 'whiteout', 'bloodstrike', 'warzone'] },
   { id: 'software', subs: ['licenses', 'apps'] }
 ];
@@ -977,3 +977,53 @@ export const STORE = {
     ['day.sun',  '10:00 – 19:00']
   ]
 };
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   Store owner's edits (admin dashboard)
+   Everything above is the catalogue as shipped. Edits made in #/admin are
+   kept as a small record in the browser (localStorage "tg.admin") and laid
+   over that catalogue: added and edited products, removed ones, categories
+   and subcategories, names, and what each page section shows. The arrays
+   and objects above are updated in place, so every page sees the result.
+   ══════════════════════════════════════════════════════════════════════ */
+export const ADMIN_KEY = 'tg.admin';
+
+const copy = v => JSON.parse(JSON.stringify(v));
+const SHIPPED = copy({ PRODUCTS, CATEGORIES, SUB_NAMES, HERO, NEW_DROPS });
+
+/* Products the owner removed. Past orders still need their name and price,
+   so they stay readable here but are no longer listed anywhere. */
+export const RETIRED = [];
+/* Category names the owner typed, per language: { id: { en, fr, ar } } */
+export const CAT_NAMES = {};
+/* What each page section shows. hidden: { key: true }, titles: { key: { en, fr, ar } },
+   shelf: product ids, or empty for the automatic pick. */
+export const PAGE_SECTIONS = { hidden: {}, titles: {}, shelf: [] };
+
+const refill = (arr, items) => arr.splice(0, arr.length, ...items);
+const reset = (obj, ...sources) => { for (const k of Object.keys(obj)) delete obj[k]; Object.assign(obj, ...sources); };
+
+export function loadAdmin() {
+  try { return JSON.parse(localStorage.getItem(ADMIN_KEY)) || {}; } catch { return {}; }
+}
+
+export function applyAdmin(a = {}) {
+  const removed = new Set(a.removed || []);
+  const edited = a.edited || {};
+  const shipped = SHIPPED.PRODUCTS.map(p => (edited[p.id] ? { ...p, ...edited[p.id] } : p));
+  const all = [...shipped, ...(a.added || [])];
+  refill(PRODUCTS, copy(all.filter(p => !removed.has(p.id))));
+  refill(RETIRED, copy(all.filter(p => removed.has(p.id))));
+  refill(CATEGORIES, copy(a.categories || SHIPPED.CATEGORIES));
+  reset(SUB_NAMES, SHIPPED.SUB_NAMES, a.subNames || {});
+  reset(CAT_NAMES, a.catNames || {});
+  refill(HERO, a.hero || SHIPPED.HERO);
+  refill(NEW_DROPS, a.drops || SHIPPED.NEW_DROPS);
+  reset(PAGE_SECTIONS, { hidden: { ...(a.hidden || {}) }, titles: copy(a.titles || {}), shelf: [...(a.shelf || [])] });
+}
+
+/** The shipped catalogue, for the dashboard's "reset" and "edited" markers. */
+export const shipped = () => SHIPPED;
+
+applyAdmin(loadAdmin());

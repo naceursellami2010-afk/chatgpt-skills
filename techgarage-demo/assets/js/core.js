@@ -1,28 +1,48 @@
 /* TechGarage demo — shared state, store actions and UI primitives.
    Everything a page needs lives here so the views stay declarative. */
 
-import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, TOPUP_METHOD, PAYMENT_FEES } from './data.js?v=20261123c';
-import { t, plural, price, date, word, blurb, num } from './i18n.js?v=20261123c';
+import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, TOPUP_METHOD, PAYMENT_FEES,
+         RETIRED, CAT_NAMES, ADMIN_KEY, PAGE_SECTIONS, applyAdmin } from './data.js?v=20261124a';
+import { t, plural, price, date, word, blurb, num, lang } from './i18n.js?v=20261124a';
 
 /* ── helpers ───────────────────────────────────────────────────────── */
 export const $  = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-export const byId = Object.fromEntries(PRODUCTS.map(p => [p.id, p]));
+/* Every product by id — the listed ones plus removed ones that past orders
+   still mention. Rebuilt in place whenever the store owner edits the catalogue. */
+export const byId = {};
+export const isListed = id => PRODUCTS.some(p => p.id === id);
+/** Products by id that are still sold (lists the owner curates may name removed ones). */
+export const listed = ids => ids.map(id => byId[id]).filter(p => p && isListed(p.id));
+/** Is a page section switched off in the admin? */
+export const sectionHidden = key => !!PAGE_SECTIONS.hidden[key];
+/** A section's title: the owner's wording in this language, else the store's default. */
+export const secTitle = (key, fallbackKey) => {
+  const own = PAGE_SECTIONS.titles[key];
+  return own?.[lang()] || own?.en || t(fallbackKey);
+};
+function reindex() {
+  for (const k of Object.keys(byId)) delete byId[k];
+  for (const p of [...RETIRED, ...PRODUCTS]) byId[p.id] = p;
+  FAMILY_CATS.splice(0, FAMILY_CATS.length, ...CATEGORIES.filter(c => c.grouped).map(c => c.id));
+  for (const k of Object.keys(prefixCache)) delete prefixCache[k];
+}
 
 /* ── brand families ────────────────────────────────────────────────────
    Gift cards and mobile games are browsed one brand at a time: the shop
    shows one tile per brand, and the product page switches region and
    value inside it. Region and value are read from the store's own titles. */
-export const FAMILY_CATS = ['cards', 'mobile'];
+export const FAMILY_CATS = [];   // categories browsed by brand — filled by reindex()
 export const familyOf = p => (p && FAMILY_CATS.includes(p.cat) ? p.sub : null);
 export const familyVariants = fam => PRODUCTS.filter(p => familyOf(p) === fam);
 export const familyLead = fam => familyVariants(fam)[0];
 
 const REGION_RULES = [[/\(FR\)|FRANCE/i, 'FR'], [/UNITED STATES|\(US\)|USA/i, 'US'], [/TURKEY|\(TR\)/i, 'TR'],
                       [/INDIA/i, 'IN'], [/EUROPE|EURO\b|€/i, 'EU']];
-export const regionOf = p => (REGION_RULES.find(([re]) => re.test(p.name + ' ' + p.short)) || [, 'GL'])[1];
+export const regionOf = p => p.region || (REGION_RULES.find(([re]) => re.test(p.name + ' ' + p.short)) || [, 'GL'])[1];
 
 const prefixCache = {};
+reindex();   // byId and FAMILY_CATS, before saved orders and baskets are read
 function familyPrefix(fam) {
   if (fam in prefixCache) return prefixCache[fam];
   const names = familyVariants(fam).map(p => p.short);
@@ -33,6 +53,7 @@ function familyPrefix(fam) {
 }
 /** "Steam Wallet 20 EUR (FR)" → "20 EUR"; "Fortnite Crew · 2 months" → "Crew · 2 months". */
 export const valueOf = p => {
+  if (p.value) return p.value;
   const fam = familyOf(p);
   let v = fam ? p.short.slice(familyPrefix(fam).length) : p.short;
   v = v.replace(/\s*\((?:FR|US|TR|EU|IN)\)\s*$/, '').replace(/^[·\s]+/, '').trim();
@@ -45,7 +66,11 @@ export const fmtDate = date;
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-export const catLabel = id => id && CATEGORIES.some(c => c.id === id) ? t('cat.' + id) : t('cat.allProducts');
+export const catLabel = id => {
+  if (!id || !CATEGORIES.some(c => c.id === id)) return t('cat.allProducts');
+  const own = CAT_NAMES[id];
+  return own?.[lang()] || own?.en || t('cat.' + id);
+};
 export const subLabel = id => SUB_NAMES[id] || t('sub.' + id);
 export const subsOf = cat => (CATEGORIES.find(c => c.id === cat) || {}).subs || [];
 export const avatarSrc = name => `assets/avatars/${name}.png`;
@@ -87,6 +112,9 @@ export const ICON = {
   shield: svg('<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>', 18, 1.8),
   bell:   svg('<path d="M18 8.5a6 6 0 1 0-12 0c0 6-2.2 7.5-2.2 7.5h16.4S18 14.5 18 8.5"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/>', 18, 1.8),
   palette:svg('<path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-1.8 0-.5-.2-.9-.5-1.3-.3-.3-.5-.8-.5-1.3 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="14.5" cy="7" r="1.2"/>', 18, 1.8),
+  admin:  svg('<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><path d="M17.25 14v6.5M14 17.25h6.5"/>', 18, 1.8),
+  up:     svg('<path d="M6 15l6-6 6 6"/>', 14, 2.4),
+  trash:  svg('<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/>', 15, 1.9),
   lock:   svg('<rect x="4" y="10.5" width="16" height="11" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>', 18, 1.8),
   globe:  svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>', 18, 1.8),
   download: svg('<path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/>', 16),
@@ -114,7 +142,7 @@ const DEFAULT_PREFS = {
 };
 
 const storedPrefs = load('tg.prefs', {});
-const known = id => id in byId;
+const known = isListed;
 
 /* Saved data can outlive the catalogue (an earlier build sold hardware), so
    anything that no longer exists is dropped on load. */
@@ -125,7 +153,7 @@ export const state = {
   wish: new Set(load('tg.wish', []).filter(known)),
   prefs: { ...DEFAULT_PREFS, ...storedPrefs, notify: { ...DEFAULT_PREFS.notify, ...(storedPrefs.notify || {}) } },
   profile: { ...ACCOUNT, ...load('tg.profile', {}) },
-  orders: load('tg.orders', []).filter(o => o.items?.every(([id]) => known(id))),
+  orders: load('tg.orders', []).filter(o => o.items?.every(([id]) => id in byId)),   // removed products stay readable
   viewed: load('tg.viewed', []).filter(known),
   read: new Set(load('tg.read', []))
 };
@@ -276,9 +304,10 @@ export function placeOrder({ name, email, phone, payment, accounts }) {
 
 /* ── delivery: what the shopper receives, and a demo credential for it ── */
 /** How a top-up reaches the game: 'loginFull' | 'login' | 'id' (see TOPUP_METHOD). */
-export const topupMethod = p => (p.cat === 'mobile' && TOPUP_METHOD[p.sub]) || 'id';
+export const topupMethod = p => p.topup || (p.cat === 'mobile' && TOPUP_METHOD[p.sub]) || 'id';
 
 export function deliveryType(p) {
+  if (p.delivery) return p.delivery;   // set by the store owner on products they add
   if (p.cat === 'mobile' || p.sub === 'topups' || p.sub === 'apps') return 'topup';
   if (p.cat === 'cards') return 'code';
   if (p.tags.some(tag => /account/i.test(tag))) return 'account';
@@ -486,4 +515,23 @@ export function resetEverything() {
   KEYS.forEach(k => { try { localStorage.removeItem(k); } catch {} });
   location.hash = '#/';
   location.reload();
+}
+
+
+/* ── catalogue edits from the admin dashboard ──────────────────────────
+   Saves the owner's record, lays it over the catalogue, re-indexes, drops
+   basket and wishlist entries that are no longer sold, and tells the shell
+   to redraw (tabs, menus, the current page). */
+
+export function commitAdmin(record) {
+  try { localStorage.setItem(ADMIN_KEY, JSON.stringify(record)); }
+  catch { toast(t('adm.full')); return false; }
+  applyAdmin(record);
+  reindex();
+  let changed = false;
+  for (const id of Object.keys(state.cart)) if (!isListed(id)) { delete state.cart[id]; changed = true; }
+  for (const id of [...state.wish]) if (!isListed(id)) { state.wish.delete(id); changed = true; }
+  if (changed) { save('tg.cart', state.cart); save('tg.wish', [...state.wish]); emit('cart'); emit('wish'); }
+  emit('catalog');
+  return true;
 }

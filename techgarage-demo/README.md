@@ -74,6 +74,7 @@ refresh and the browser's Back button all work.
 | Settings | `#/settings/<section>` | Profile & avatar, password & two-step, notifications, accent colour & motion, data export & reset |
 | Support | `#/support` | Phone, email, address and opening hours, FAQ, contact form (opens your email app) |
 | Notifications | `#/notifications` | All notifications, mark as read |
+| Store admin | `#/admin`, `#/admin/products`, `#/admin/sections`, `#/admin/product/<id>` | Categories and subcategories, products, and what every page section shows (see below) |
 
 The shell around them: an icon rail (store, wishlist, basket, profile, settings), the
 category tabs, search, notifications, the account menu and a slide-out basket.
@@ -120,11 +121,38 @@ line in the order summary; the line, the total and the Place order button update
 moment the method changes, and the order page keeps the same breakdown. Fees are kept to
 millimes, so amounts with a fee read like `399.75 DT`.
 
+## Store admin
+
+Open it from the account menu → **Store admin** (`#/admin`). Every change applies to the
+whole store at once — tabs, the subcategory menu, shop pages, product pages, search and
+the home page redraw in place.
+
+- **Categories** — add a category with its name in English, French and Arabic (it becomes
+  a tab), rename, reorder, delete; add, rename, reorder and delete subcategories. "Browse by
+  brand" turns a category into one tile per brand with the region / value picker. A
+  category or subcategory that still has products can't be deleted.
+- **Products** — search and filter the catalogue; add a product (photo upload, resized to
+  640 px WebP, or an image link; name, full title, price, category, subcategory, region,
+  value label, delivery type, what a top-up asks for, tags, badge, description, store link);
+  edit any product, shipped ones included; delete. Deleted products leave every list and
+  their page, but past orders still show them.
+- **Page sections** — for the home page: which products the hero carousel, New Drops and
+  the product shelf show and in what order, each section's title in three languages, and
+  whether it shows at all (Recently Viewed too). For product pages: switch How it works,
+  Details and Related products on or off.
+- **Export / Import / Reset** — download the edits as JSON, load them in another browser,
+  or go back to the catalogue as shipped.
+
+This is a front-end demo with no server, so the edits are saved in the browser that made
+them (`localStorage`, key `tg.admin`) and laid over the shipped catalogue by `applyAdmin()`
+in `data.js`. A real store would save the same record to its backend and put the admin
+behind a login.
+
 ## Languages
 
 English, French and Arabic, chosen from the globe button in the top bar or in
 Settings → Appearance, and remembered. Every phrase, product description, the FAQ,
-notifications, dates and prices are translated (`assets/js/i18n.js`, 368 phrases per
+notifications, dates and prices are translated (`assets/js/i18n.js`, 466 phrases per
 language). Counts use each language's plural rules, so Arabic gets its one / two / few /
 many forms. Prices read `180 DT` in English and French and `180 د.ت` in Arabic.
 
@@ -195,6 +223,7 @@ assets/js/data.js       catalogue, categories and subcategories, account, orders
 assets/js/i18n.js       English, French and Arabic: phrases, plurals, prices, dates, product copy, FAQ
 assets/js/core.js       shared state, store actions, smart photo fit, product card
 assets/js/views.js      every page
+assets/js/admin.js      store admin: categories, products, page sections
 assets/js/app.js        shell, search, basket, router
 assets/products/        product imagery
 assets/avatars/         gravify-generated avatars

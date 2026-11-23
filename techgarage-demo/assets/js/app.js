@@ -3,14 +3,17 @@
    hash router. Pages live in views.js; state and helpers in core.js;
    wording in i18n.js. */
 
-import { CATEGORIES, NOTIFICATIONS } from './data.js?v=20261123c';
-import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js?v=20261123c';
+import { CATEGORIES, NOTIFICATIONS } from './data.js?v=20261124a';
+import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js?v=20261124a';
 import {
   $, $$, byId, tnd, esc, avatarSrc, go, ICON, state, on,
   cartQty, cartTotal, setQty, addToCart, toggleWish, unreadCount, markRead, noteText,
   applyPrefs, searchProducts, media, fitAll, toast, catLabel, subLabel, subsOf, familyLead, FAMILY_CATS
-} from './core.js?v=20261123c';
-import { VIEWS } from './views.js?v=20261123c';
+} from './core.js?v=20261124a';
+import { VIEWS } from './views.js?v=20261124a';
+import { admin } from './admin.js?v=20261124a';
+
+VIEWS.admin = admin;
 
 applyLang();
 applyPrefs();
@@ -69,6 +72,7 @@ function renderAccount() {
     <a class="pop-row" href="#/wishlist"><span class="pop-ico">${ICON.heart}</span><b>${esc(t('menu.wishlist'))}</b><em class="pop-count">${state.wish.size || ''}</em></a>
     <a class="pop-row" href="#/settings"><span class="pop-ico">${ICON.palette}</span><b>${esc(t('menu.settings'))}</b></a>
     <a class="pop-row" href="#/support"><span class="pop-ico">${ICON.phone}</span><b>${esc(t('menu.support'))}</b></a>
+    <a class="pop-row" href="#/admin"><span class="pop-ico">${ICON.admin}</span><b>${esc(t('menu.admin'))}</b></a>
     <hr>
     <button class="pop-row" id="signOut"><span class="pop-ico">${ICON.lock}</span><b>${esc(t('menu.signout'))}</b></button>`;
   $('#signOut').addEventListener('click', () => { closePops(); toast(t('toast.signout')); });
@@ -115,7 +119,7 @@ function renderTabs() {
     const a = document.createElement('a');
     a.className = 'tab';
     a.setAttribute('role', 'tab');
-    a.textContent = t('cat.' + c.id);
+    a.textContent = c.id === 'all' ? t('cat.all') : catLabel(c.id);
     a.dataset.cat = c.id;
     a.href = c.id === 'all' ? '#/' : `#/shop/${c.id}`;
     if (c.subs) a.setAttribute('aria-haspopup', 'true');
@@ -333,7 +337,8 @@ const ROUTES = [
   [/^profile$/,                           'profile'],
   [/^settings(?:\/([\w-]+))?$/,           'settings'],
   [/^support$/,                           'support'],
-  [/^notifications$/,                     'notifications']
+  [/^notifications$/,                     'notifications'],
+  [/^admin(?:\/([\w-]+))?(?:\/([\w-]+))?$/, 'admin']
 ];
 
 let current = null;
@@ -377,6 +382,15 @@ onLang(() => {
   if (input.value) search();
   route({ keepScroll: true });
   toast(t('lang.changed'), true);
+});
+
+/* The store owner changed the catalogue in the admin: redraw the tabs, menus
+   and the page being shown, in place. */
+on('catalog', () => {
+  renderTabs();
+  if (drawer.classList.contains('open')) renderDrawer();
+  if (input.value) search();
+  route({ keepScroll: true });
 });
 
 addEventListener('hashchange', () => route());
