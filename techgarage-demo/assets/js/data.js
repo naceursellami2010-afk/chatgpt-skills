@@ -263,8 +263,7 @@ export const RECENT = [
   { id: 'elden-ring',  note: 'Delivered · 12 Nov' },
   { id: 'rtx-5060',    note: 'In your basket'          },
   { id: 'steam-20',    note: 'Delivered · 03 Nov' },
-  { id: 'rk-r65',      note: 'Viewed yesterday'        },
-  { id: 'minecraft',   note: 'Delivered · 28 Oct' }
+  { id: 'rk-r65',      note: 'Viewed yesterday'        }
 ];
 
 /* Account shown in the top-right chip — demo identity, matches assets/avatars */
