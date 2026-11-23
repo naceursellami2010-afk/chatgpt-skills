@@ -6,7 +6,7 @@
    Everything here steps aside when the shopper (or their device) asks for
    reduced motion. */
 
-import { calm, esc } from './core.js?v=20261124i';
+import { calm, esc } from './core.js?v=20261124k';
 
 /** Is rich motion wanted right now? Also mirrored as html.motion for the CSS. */
 export function motionOn() {
@@ -35,7 +35,7 @@ const INTRO = [
   '.cat-hero [data-intro]', '.cat-covers', '.shop-bar', '.sub-chips', '.filters',
   '.pdp > .media', '.pdp-info > :not(h1)', '.demo-note', '.success',
   '.checkout > *', '.order-layout > *', '.timeline', '.stats', '.order-list',
-  '.settings > *', '.support-layout > *', '.adm-tabs', '.adm-toolbar', '.adm-body > .card',
+  '.settings > *', '.support-layout > *', '.adm-side', '.adm-toolbar', '.adm-body > .card', '.stat-tile', '.ov-row > .card',
   '.empty-state > *', '.not-found > *', '.note-list', '.page > .grid-tiles'
 ].join(',');
 const TITLES = '.page-head h1, .cat-hero h1, .pdp-info h1, .not-found h1';

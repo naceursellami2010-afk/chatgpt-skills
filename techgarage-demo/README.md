@@ -123,7 +123,12 @@ millimes, so amounts with a fee read like `399.75 DT`.
 
 ## Store admin
 
-Open it from the account menu → **Store admin** (`#/admin`). Every change applies to the
+Open it from the account menu → **Store admin** (`#/admin`). A sidebar (Feather icons)
+leads to **Overview**, Categories, Products and Page sections, with export / import / reset
+underneath. **Overview** shows four stat cards — revenue and orders over the last 30 days
+with the change against the 30 days before, products on sale, categories — a sales-per-day
+line chart (hover or arrow keys for each day, "Show as a table" for the numbers) and the
+best sellers, all from the store's own orders. Every change applies to the
 whole store at once — tabs, the subcategory menu, shop pages, product pages, search and
 the home page redraw in place.
 

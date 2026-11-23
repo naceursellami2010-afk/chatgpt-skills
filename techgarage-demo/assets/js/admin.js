@@ -4,13 +4,13 @@
    (see applyAdmin in data.js), saved with commitAdmin(), which re-indexes
    the catalogue and redraws the store — no reload, no server. */
 
-import { PRODUCTS, CATEGORIES, SUB_NAMES, HERO, NEW_DROPS, CAT_NAMES, PAGE_SECTIONS, ADMIN_KEY, loadAdmin, shipped } from './data.js?v=20261124i';
-import { LANGS, t, tIn, plural, lang } from './i18n.js?v=20261124i';
+import { PRODUCTS, CATEGORIES, SUB_NAMES, HERO, NEW_DROPS, CAT_NAMES, PAGE_SECTIONS, ADMIN_KEY, loadAdmin, shipped } from './data.js?v=20261124k';
+import { LANGS, t, tIn, plural, lang, langInfo } from './i18n.js?v=20261124k';
 import {
   $, $$, byId, tnd, esc, catLabel, subLabel, subsOf, go, ICON, media, fitAll, toast, commitAdmin,
-  isListed, listed, regionOf, valueOf, deliveryType, topupMethod
-} from './core.js?v=20261124i';
-import { pageHead, field, emptyState, toggle } from './views.js?v=20261124i';
+  isListed, listed, regionOf, valueOf, deliveryType, topupMethod, allOrders, orderTotal
+} from './core.js?v=20261124k';
+import { pageHead, field, emptyState, toggle } from './views.js?v=20261124k';
 
 /* ── the owner's record ────────────────────────────────────────────── */
 const clone = v => JSON.parse(JSON.stringify(v));
@@ -513,36 +513,218 @@ function sectionsTab() {
 const listOf = (r, key) => (r[key] ??= key === 'hero' ? [...HERO] : key === 'drops' ? [...NEW_DROPS] : [...PAGE_SECTIONS.shelf]);
 
 /* ══════════════════════════════════════════════════════════════════════
+   Overview — the store at a glance: four stat cards, sales per day,
+   best sellers. Built from the store's own orders and catalogue.
+   ══════════════════════════════════════════════════════════════════════ */
+/* Feather icons (MIT), drawn the same way as the rest of the store's icons */
+const fi = (d, size = 18) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const FI = {
+  overview: fi('<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>'),
+  layers: fi('<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>'),
+  package: fi('<line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>'),
+  layout: fi('<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>'),
+  dollar: fi('<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>', 20),
+  bag: fi('<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>', 20),
+  box: fi('<line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>', 20),
+  folder: fi('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>', 20),
+  up: fi('<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>', 14),
+  down: fi('<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>', 14),
+  download: fi('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>', 16),
+  upload: fi('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>', 16),
+  reset: fi('<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>', 16)
+};
+
+const DAY = 864e5;
+const dayStart = ts => { const d = new Date(ts); d.setHours(0, 0, 0, 0); return d.getTime(); };
+const locale = () => langInfo().locale;
+const fmtNum = n => n.toLocaleString(lang() === 'fr' ? 'fr-FR' : 'en-US', { maximumFractionDigits: 2 });
+const fmtDT = n => (lang() === 'ar' ? `${fmtNum(n)} د.ت` : `${fmtNum(n)} DT`);
+const shortDate = ts => new Date(ts).toLocaleDateString(locale(), { day: 'numeric', month: 'short', numberingSystem: 'latn' });
+
+/** Revenue and orders now vs the 30 days before, sales per day, best sellers. */
+function storeStats() {
+  const today = dayStart(Date.now()), from = today - 29 * DAY, prevFrom = from - 30 * DAY;
+  const orders = allOrders();
+  const inRange = (o, a, b) => o.date >= a && o.date < b;
+  const cur = orders.filter(o => inRange(o, from, today + DAY)), prev = orders.filter(o => inRange(o, prevFrom, from));
+  const sum = list => Math.round(list.reduce((s, o) => s + orderTotal(o), 0) * 1000) / 1000;
+  const days = Array.from({ length: 30 }, (_, i) => ({ t: from + i * DAY, v: 0, n: 0 }));
+  for (const o of cur) { const d = days[Math.floor((dayStart(o.date) - from) / DAY)]; if (d) { d.v += orderTotal(o); d.n++; } }
+  days.forEach(d => { d.v = Math.round(d.v * 1000) / 1000; });
+  const units = {};
+  for (const o of orders) for (const [id, q] of o.items) {
+    const p = byId[id]; if (!p) continue;
+    (units[id] ??= { p, q: 0, v: 0 }); units[id].q += q; units[id].v += p.price * q;
+  }
+  const best = Object.values(units).sort((a, b) => b.v - a.v).slice(0, 5);
+  const r = loadAdmin();
+  return {
+    revenue: sum(cur), revenuePrev: sum(prev), orders: cur.length, ordersPrev: prev.length,
+    products: PRODUCTS.length, added: (r.added || []).filter(p => isListed(p.id)).length,
+    cats: CATEGORIES.filter(c => c.id !== 'all').length, subs: CATEGORIES.reduce((n, c) => n + (c.subs?.length || 0), 0),
+    days, best
+  };
+}
+
+/** "+18%" against the previous 30 days; "New" when there was nothing before. */
+function delta(now, before) {
+  if (!before && !now) return `<span class="st-delta flat">${esc(t('adm.st.flat'))}</span>`;
+  if (!before) return `<span class="st-delta up">${FI.up}<b>${esc(t('adm.new'))}</b> ${esc(t('adm.st.vsPrev'))}</span>`;
+  const pct = Math.round(((now - before) / before) * 100);
+  const dir = pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
+  const sign = pct > 0 ? '+' : pct < 0 ? '−' : '±';
+  return `<span class="st-delta ${dir}">${dir === 'down' ? FI.down : dir === 'up' ? FI.up : ''}<b dir="ltr">${sign}${Math.abs(pct)}%</b> ${esc(t('adm.st.vsPrev'))}</span>`;
+}
+
+const statTile = (icon, label, value, foot) => `
+  <article class="card stat-tile">
+    <span class="st-icon">${icon}</span>
+    <p class="st-label">${esc(label)}</p>
+    <p class="st-value" dir="ltr">${value}</p>
+    <p class="st-foot">${foot}</p>
+  </article>`;
+
+/** Sales per day as a thin line over a recessive grid (single series: the title names it). */
+function salesChart(days) {
+  const W = 720, H = 220, L = 46, R = 12, T = 14, B = 30;
+  const max = Math.max(...days.map(d => d.v));
+  const step = max <= 0 ? 100 : Math.pow(10, Math.floor(Math.log10(max))) * (max / Math.pow(10, Math.floor(Math.log10(max))) > 5 ? 2 : 1);
+  const top = max <= 0 ? 300 : Math.ceil(max / step) * step;
+  const x = i => L + (i * (W - L - R)) / (days.length - 1);
+  const y = v => T + (1 - v / top) * (H - T - B);
+  const ticks = [0, top / 3, (2 * top) / 3, top].map(v => Math.round(v));
+  const pts = days.map((d, i) => `${x(i).toFixed(1)},${y(d.v).toFixed(1)}`);
+  const area = `M${x(0)},${y(0)} L${pts.join(' L')} L${x(days.length - 1)},${y(0)} Z`;
+  const empty = days.every(d => !d.v);
+  return `
+    <div class="chart" id="salesChart" dir="ltr" tabindex="0" role="img"
+         aria-label="${esc(t('adm.chart.title'))}: ${esc(fmtDT(days.reduce((s, d) => s + d.v, 0)))}">
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+        ${ticks.map(v => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/>`).join('')}
+        <path class="area" d="${area}"/>
+        <polyline class="line" points="${pts.join(' ')}"/>
+        <line class="cross" x1="0" x2="0" y1="${T}" y2="${H - B}" hidden/>
+        <circle class="dot" r="4.5" cx="0" cy="0" hidden/>
+      </svg>
+      <div class="chart-y">${ticks.map(v => `<span style="top:${(y(v) / H) * 100}%">${fmtNum(v)}</span>`).join('')}</div>
+      <div class="chart-x">${days.map((d, i) => ((i % 7 === 0 && i < days.length - 4) || i === days.length - 1) ? `<span style="left:${(x(i) / W) * 100}%">${esc(shortDate(d.t))}</span>` : '').join('')}</div>
+      <div class="chart-tip" hidden></div>
+      ${empty ? `<p class="chart-empty">${esc(t('adm.chart.empty'))}</p>` : ''}
+    </div>
+    <details class="chart-table">
+      <summary>${esc(t('adm.chart.table'))}</summary>
+      <table>
+        <thead><tr><th scope="col">${esc(t('adm.chart.date'))}</th><th scope="col">${esc(t('adm.chart.orders'))}</th><th scope="col">${esc(t('adm.chart.sales'))}</th></tr></thead>
+        <tbody>${days.filter(d => d.v).map(d => `<tr><td>${esc(shortDate(d.t))}</td><td>${d.n}</td><td>${esc(fmtDT(d.v))}</td></tr>`).join('') ||
+          `<tr><td colspan="3">${esc(t('adm.chart.empty'))}</td></tr>`}</tbody>
+      </table>
+    </details>`;
+}
+
+function overviewTab() {
+  const s = storeStats();
+  return `
+    <div class="stat-grid">
+      ${statTile(FI.dollar, t('adm.st.revenue'), esc(fmtDT(s.revenue)), delta(s.revenue, s.revenuePrev))}
+      ${statTile(FI.bag, t('adm.st.orders'), fmtNum(s.orders), delta(s.orders, s.ordersPrev))}
+      ${statTile(FI.box, t('adm.st.products'), fmtNum(s.products),
+        `<span class="st-delta ${s.added ? 'up' : 'flat'}">${s.added ? FI.up : ''}${esc(s.added ? t('adm.st.added', { n: s.added }) : t('adm.st.catalogue'))}</span>`)}
+      ${statTile(FI.folder, t('adm.st.categories'), fmtNum(s.cats), `<span class="st-delta flat">${esc(plural('subs', s.subs))}</span>`)}
+    </div>
+    <div class="ov-row">
+      <section class="card adm-card ov-chart">
+        <div class="ov-head"><h2>${esc(t('adm.chart.title'))}</h2><span class="hint">${esc(t('adm.st.last30'))}</span></div>
+        ${salesChart(s.days)}
+      </section>
+      <section class="card adm-card ov-best">
+        <h2>${esc(t('adm.best'))}</h2>
+        ${s.best.length ? `<ol class="best-list">${s.best.map(({ p, q, v }) => `
+          <li><a href="#/admin/product/${esc(p.id)}">${media(p, 'thumb')}<span class="txt"><b>${esc(p.short)}</b><span>${esc(t('adm.sold', { n: q }))}</span></span><em dir="ltr">${esc(fmtDT(v))}</em></a></li>`).join('')}</ol>`
+          : `<p class="hint">${esc(t('adm.best.none'))}</p>`}
+      </section>
+    </div>`;
+}
+
+/** Crosshair + tooltip on hover, arrow keys when the chart has focus. */
+function mountChart(el) {
+  const box = $('#salesChart', el);
+  if (!box) return () => {};
+  const days = storeStats().days, svg = $('svg', box), tip = $('.chart-tip', box);
+  const cross = $('.cross', svg), dot = $('.dot', svg), line = $('.line', svg);
+  const pts = line.getAttribute('points').split(' ').map(p => p.split(',').map(Number));
+  const W = svg.viewBox.baseVal.width, H = svg.viewBox.baseVal.height;
+  let idx = -1;
+  const show = i => {
+    idx = Math.max(0, Math.min(days.length - 1, i));
+    const [px, py] = pts[idx];
+    cross.setAttribute('x1', px); cross.setAttribute('x2', px); cross.hidden = false;
+    dot.setAttribute('cx', px); dot.setAttribute('cy', py); dot.hidden = false;
+    const d = days[idx];
+    tip.innerHTML = `<b>${esc(shortDate(d.t))}</b><span>${esc(fmtDT(d.v))}</span><small>${esc(plural('orders', d.n))}</small>`;
+    tip.hidden = false;
+    const left = (px / W) * box.clientWidth, w = tip.offsetWidth;
+    tip.style.left = `${Math.max(0, Math.min(box.clientWidth - w, left - w / 2))}px`;
+    tip.style.top = `${Math.max(0, (py / H) * box.clientHeight - tip.offsetHeight - 14)}px`;
+  };
+  const hide = () => { cross.hidden = dot.hidden = tip.hidden = true; idx = -1; };
+  const move = e => {
+    const r = svg.getBoundingClientRect(), vx = ((e.clientX - r.left) / r.width) * W;
+    let best = 0;
+    pts.forEach(([px], i) => { if (Math.abs(px - vx) < Math.abs(pts[best][0] - vx)) best = i; });
+    show(best);
+  };
+  const key = e => {
+    if (e.key === 'ArrowRight') { e.preventDefault(); show(idx < 0 ? days.length - 1 : idx + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); show(idx < 0 ? days.length - 1 : idx - 1); }
+    if (e.key === 'Escape') hide();
+  };
+  box.addEventListener('pointermove', move);
+  box.addEventListener('pointerleave', hide);
+  box.addEventListener('keydown', key);
+  box.addEventListener('blur', hide);
+  return () => { box.removeEventListener('pointermove', move); box.removeEventListener('pointerleave', hide); box.removeEventListener('keydown', key); };
+}
+
+/* ══════════════════════════════════════════════════════════════════════
    The page
    ══════════════════════════════════════════════════════════════════════ */
-const TABS = ['categories', 'products', 'sections'];
+const TABS = ['overview', 'categories', 'products', 'sections'];
+const TAB_ICON = { overview: FI.overview, categories: FI.layers, products: FI.package, sections: FI.layout };
 
 export const admin = {
   title: () => t('adm.title'),
   render(ctx) {
     const [tab, arg] = ctx.params;
     const editing = tab === 'product';
-    const cur = editing ? 'products' : TABS.includes(tab) ? tab : 'categories';
-    const body = editing ? productForm(arg) : cur === 'products' ? productsTab() : cur === 'sections' ? sectionsTab() : categoriesTab();
+    const cur = editing ? 'products' : TABS.includes(tab) ? tab : 'overview';
+    const body = editing ? productForm(arg) : cur === 'products' ? productsTab() : cur === 'sections' ? sectionsTab()
+      : cur === 'categories' ? categoriesTab() : overviewTab();
     const trail = [[t('home'), '#/'], [t('adm.title'), '#/admin'], ...(editing ? [[t('adm.tab.products'), '#/admin/products'],
       [arg === 'new' ? t('adm.addTitle') : (byId[arg]?.short || ''), '']] : [[t('adm.tab.' + cur), '']])];
     return `
       <div class="page adm">
-        ${pageHead(editing ? (arg === 'new' ? t('adm.addTitle') : t('adm.editTitle')) : t('adm.title'), esc(t('adm.intro')), trail, `
-          <div class="adm-io">
-            <button class="btn btn-ghost btn-sm" data-act="export">${esc(t('adm.export'))}</button>
-            <label class="btn btn-ghost btn-sm">${esc(t('adm.import'))}<input type="file" accept="application/json,.json" id="admImport" hidden></label>
-            <button class="btn btn-ghost btn-sm adm-danger" data-act="reset">${esc(t('adm.reset'))}</button>
-          </div>`)}
-        <nav class="chip-row adm-tabs" aria-label="${esc(t('adm.title'))}">
-          ${TABS.map(id => `<a class="fchip" href="#/admin/${id}" ${id === cur ? 'aria-current="true"' : ''}>${esc(t('adm.tab.' + id))}</a>`).join('')}
-        </nav>
-        <div class="adm-body">${body}</div>
+        ${pageHead(editing ? (arg === 'new' ? t('adm.addTitle') : t('adm.editTitle')) : t('adm.tab.' + cur), esc(t('adm.intro')), trail)}
+        <div class="adm-shell">
+          <aside class="card adm-side">
+            <p class="adm-side-title">${esc(t('adm.title'))}</p>
+            <nav class="adm-nav" aria-label="${esc(t('adm.title'))}">
+              ${TABS.map(id => `<a href="#/admin/${id}" ${id === cur ? 'aria-current="page"' : ''}>${TAB_ICON[id]}<span>${esc(t('adm.tab.' + id))}</span></a>`).join('')}
+            </nav>
+            <div class="adm-tools">
+              <p class="adm-side-title">${esc(t('adm.data'))}</p>
+              <button class="adm-tool" data-act="export" aria-label="${esc(t('adm.export'))}">${FI.download}<span>${esc(t('adm.export'))}</span></button>
+              <label class="adm-tool" aria-label="${esc(t('adm.import'))}">${FI.upload}<span>${esc(t('adm.import'))}</span><input type="file" accept="application/json,.json" id="admImport" hidden></label>
+              <button class="adm-tool adm-danger-text" data-act="reset" aria-label="${esc(t('adm.reset'))}">${FI.reset}<span>${esc(t('adm.reset'))}</span></button>
+            </div>
+          </aside>
+          <div class="adm-body">${body}</div>
+        </div>
       </div>`;
   },
   mount(el, ctx) {
     const cleanups = [];
     if (ctx.params[0] === 'product') cleanups.push(mountProductForm(el));
+    if (!ctx.params[0] || ctx.params[0] === 'overview') cleanups.push(mountChart(el));
 
     const onClick = e => {
       const b = e.target.closest('[data-act]');
