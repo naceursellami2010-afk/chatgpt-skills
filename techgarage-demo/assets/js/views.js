@@ -4,8 +4,8 @@
    the shell, so most markup only needs data-* attributes.
    Every visible word goes through t() / plural() from i18n.js. */
 
-import { PRODUCTS, CATEGORIES, HERO, NEW_DROPS, RECENT, NOTIFICATIONS, STORE, PAYMENT_METHODS, ACCENTS, AVATARS } from './data.js?v=20261124g';
-import { LANGS, t, plural, blurb, word, faq, lang, setLang, isRTL } from './i18n.js?v=20261124g';
+import { PRODUCTS, CATEGORIES, HERO, NEW_DROPS, RECENT, NOTIFICATIONS, STORE, PAYMENT_METHODS, ACCENTS, AVATARS } from './data.js?v=20261124i';
+import { LANGS, t, plural, blurb, word, faq, lang, setLang, isRTL } from './i18n.js?v=20261124i';
 import {
   $, $$, byId, tnd, esc, catLabel, subLabel, subsOf, avatarSrc, payLabel, fmtDate, go, ICON, state,
   cartQty, cartTotal, setQty, addToCart, markViewed, clearViewed, unreadCount, markRead, noteText,
@@ -14,9 +14,9 @@ import {
   deliveryType, credential, searchProducts, media, heartBtn, tile, toast, exportData, resetEverything,
   familyOf, familyVariants, familyLead, familyTile, regionOf, valueOf, topupMethod, FAMILY_CATS,
   isListed, listed, sectionHidden, secTitle
-} from './core.js?v=20261124g';
-import { PAGE_SECTIONS } from './data.js?v=20261124g';
-import { splitWords, parallax } from './motion.js?v=20261124g';
+} from './core.js?v=20261124i';
+import { PAGE_SECTIONS } from './data.js?v=20261124i';
+import { splitWords, parallax } from './motion.js?v=20261124i';
 
 /* Where a subcategory link goes: brands (gift cards, mobile games) open their
    product page, where region and value are picked; others open the shop. */
@@ -122,11 +122,12 @@ const chevron = d => `<svg class="dir" width="16" height="16" viewBox="0 0 24 24
 const home = {
   title: () => t('home.title'),
   render: () => `
+    <h1 class="sr">${esc(t('home.title'))} · TechGarage</h1>
     <div class="main${sectionHidden('drops') && sectionHidden('recent') ? ' no-left' : ''}">
       <div class="col-left">
         <section class="card" style="display:flex;flex-direction:column;min-height:0" ${sectionHidden('drops') ? 'hidden' : ''}>
           <div class="card-head">
-            <span class="flame">🔥</span>
+            <span class="flame">${ICON.flame}</span>
             <h2>${esc(secTitle('drops', 'home.newDrops'))}</h2>
             <div class="sort">
               <button class="sort-btn" id="sortBtn" aria-expanded="false">
@@ -148,7 +149,7 @@ const home = {
 
       <div class="col-right">
         <section class="hero" id="hero" aria-roledescription="carousel" aria-label="${esc(t('home.featured'))}" ${sectionHidden('hero') || !listed(HERO).length ? 'hidden' : ''}>
-          <span class="badge">🔥 ${esc(secTitle('hero', 'home.trending'))}</span>
+          <span class="badge">${ICON.flame} ${esc(secTitle('hero', 'home.trending'))}</span>
           <div class="hero-ticks" id="ticks"></div>
           <div class="hero-nav">
             <button id="prev" aria-label="${esc(t('prev'))}">${chevron('prev')}</button>
@@ -184,7 +185,7 @@ const home = {
         ${media(p, 'slide-art', { eager: true, mode: 'banner' })}
         <div class="slide-body">
           <div class="chips">${p.tags.map(tag => `<span class="chip">${esc(word(tag))}</span>`).join('')}</div>
-          <h1>${esc(p.short)}</h1>
+          <h2 class="slide-title">${esc(p.short)}</h2>
           <p>${esc(blurb(p))}</p>
           <div class="price-line">
             <span class="now">${tnd(p.price)}</span>
@@ -207,7 +208,7 @@ const home = {
     const slideEls = $$('.slide', hero);
     document.documentElement.style.setProperty('--dwell', DWELL + 'ms');
 
-    slideEls.forEach(s => splitWords($('h1', s)));
+    slideEls.forEach(s => splitWords($('.slide-title', s)));
     let wasTimer = 0;
     function show(i, dir = i >= cur ? 1 : -1) {
       const from = cur;
@@ -221,7 +222,7 @@ const home = {
         s.style.transition = ''; s.style.clipPath = '';
         slideEls[from]?.classList.add('was');
         clearTimeout(wasTimer);
-        wasTimer = setTimeout(() => slideEls.forEach(x => x.classList.remove('was')), 1150);
+        wasTimer = setTimeout(() => slideEls.forEach(x => x.classList.remove('was')), 950);
       }
       slideEls.forEach((s, n) => s.classList.toggle('on', n === cur));
       $$('.tick', ticks).forEach((tk, n) => {
@@ -423,6 +424,7 @@ const shop = {
           </nav>` : ''}
         <div class="shop">
           <aside class="filters card" aria-label="${esc(t('shop.filters'))}">
+            <h2 class="sr">${esc(t('shop.filters'))}</h2>
             <h3>${esc(t('shop.category'))}</h3>
             <nav class="filter-list">
               <a href="${shopHash({ ...s, cat: '', sub: '' })}" ${!s.cat ? 'aria-current="true"' : ''}>${esc(t('cat.allProducts'))} <em>${PRODUCTS.length}</em></a>
@@ -437,7 +439,8 @@ const shop = {
             </div>
             ${s.q || s.price !== 'any' || s.sort !== 'featured' ? `<a class="clear-filters" href="${shopHash({ cat: s.cat, sub: s.sub })}">${esc(t('shop.clear'))}</a>` : ''}
           </aside>
-          <section class="shop-results">
+          <section class="shop-results" aria-labelledby="resultsH">
+            <h2 class="sr" id="resultsH">${esc(t('shop.listH'))}</h2>
             ${s.items.length
               ? `<div class="grid-tiles">${s.items.map((it, i) => it.fam ? familyTile(it.fam, i) : tile(it.p, i)).join('')}</div>`
               : emptyState(ICON.search, t('shop.none'), esc(s.q ? t('shop.noneQ', { q: s.q }) : t('shop.nonePrice')),
@@ -797,8 +800,31 @@ const checkout = {
       box.querySelector('.msg').textContent = res === true ? '' : res;
       return res === true;
     };
+    // check a field when the shopper leaves it (only once they've typed, or after an error)
+    const ruleFor = input => {
+      const n = input.name;
+      if (n === 'name') return v => v.trim().length >= 2 || t('err.name');
+      if (n === 'email') return v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) || t('err.email');
+      if (n === 'phone') return v => v.replace(/\D/g, '').length >= 8 || t('err.phone');
+      const m = n.match(/^g_.+_(email|password|uid|pid)$/);
+      return m ? accountRules[m[1]] : null;
+    };
+    const onBlur = e => {
+      const input = e.target, rule = input.name && ruleFor(input);
+      if (!rule || input.type === 'radio') return;
+      const box = input.closest('.field');
+      if (input.value !== '' || box?.classList.contains('err')) setMsg(input, rule(input.value));
+    };
+    const onInput = e => {
+      const input = e.target, rule = input.name && ruleFor(input);
+      if (rule && input.closest('.field')?.classList.contains('err') && rule(input.value) === true) setMsg(input, true);
+    };
+    form.addEventListener('focusout', onBlur);
+    form.addEventListener('input', onInput);
+
     form.addEventListener('submit', e => {
       e.preventDefault();
+      if (form.dataset.busy) return;            // already placing this order
       let first = null;
       const flag = (input, res) => { if (!setMsg(input, res) && !first) first = input; };
 
@@ -846,6 +872,12 @@ const checkout = {
       for (const [key, { password, method, ...rest }] of Object.entries(accounts)) games[key] = rest;
       saveProfile({ games });
 
+      // the button shows it's working and can't be pressed twice
+      const submit = form.querySelector('button[type=submit]');
+      form.dataset.busy = '1';
+      submit.disabled = true;
+      submit.classList.add('loading');
+      submit.setAttribute('aria-busy', 'true');
       const finish = () => {
         const order = placeOrder({ ...details, payment: form.elements.payment.value, accounts });
         go(`#/order/${order.id}?new=1`);

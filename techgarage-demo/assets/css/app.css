@@ -896,7 +896,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   color: #fff;
 }
 
-.slide h1 {
+.slide .slide-title {
   margin: 0;
   font-family: var(--display);
   font-size: clamp(30px, 2.9vw, 40px);
@@ -1383,7 +1383,7 @@ body {
 }
 .px, .price-line .now, .total b, .result .px { font-variant-numeric: tabular-nums; }
 
-.slide h1     { font-size: clamp(34px, 3.3vw, 48px); line-height: 1.1; letter-spacing: -.028em; }
+.slide .slide-title     { font-size: clamp(34px, 3.3vw, 48px); line-height: 1.1; letter-spacing: -.028em; }
 .slide p      { font-size: 17px; line-height: 1.45; letter-spacing: -.011em; color: var(--ink-80); }
 .price-line .now  { font-size: 28px; letter-spacing: -.02em; }
 .price-line .note { font-size: 13px; }
@@ -1407,7 +1407,7 @@ body {
 .recent-row b    { font-size: 14px; letter-spacing: -.011em; }
 .tile-tag        { font-size: 12px; }
 .tile-body h3    { font-size: 15px; letter-spacing: -.02em; text-wrap: balance; }
-.drop-meta h3, .sheet-body h2, .slide h1 { text-wrap: balance; }
+.drop-meta h3, .sheet-body h2, .slide .slide-title { text-wrap: balance; }
 .tile-body p     { font-size: 13px; line-height: 1.45; }
 .tile-body .px   { font-size: 14px; }
 
@@ -2036,7 +2036,7 @@ a.contact:hover { background: var(--card-2); transform: translateY(-2px); }
   .shelf { grid-template-columns: repeat(2, minmax(0, 1fr)); height: auto; overflow: visible; gap: 12px; }
   .shelf .tile:nth-child(n+5) { display: none; }
   .slide-body { padding: 26px 22px; max-width: none; }
-  .slide h1 { font-size: 28px; }
+  .slide .slide-title { font-size: 28px; }
   .slide p { display: none; }
   .hero-ticks { inset-inline-start: 22px; }
   .toasts { bottom: 86px; }
@@ -2269,7 +2269,7 @@ html[lang='ar'] {
 }
 html[lang='ar'] body { line-height: 1.6; }
 html[lang='ar'] body *, html[lang='ar'] body *::before, html[lang='ar'] body *::after { letter-spacing: 0 !important; }
-html[lang='ar'] .slide h1,
+html[lang='ar'] .slide .slide-title,
 html[lang='ar'] .page-head h1,
 html[lang='ar'] .pdp-info h1,
 html[lang='ar'] .not-found h1 { line-height: 1.3; }
@@ -2526,8 +2526,8 @@ html[lang='ar'] .adm-card h3 { text-transform: none; font-size: 13.5px; }
 
 /* --- page to page: cross-fade, shared pictures morph ---------------------- */
 ::view-transition-old(root),
-::view-transition-new(root) { animation-duration: .36s; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
-::view-transition-group(*) { animation-duration: .66s; animation-timing-function: var(--out-expo); }
+::view-transition-new(root) { animation-duration: .3s; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+::view-transition-group(*) { animation-duration: .5s; animation-timing-function: var(--out-expo); }
 .pdp-art { view-transition-name: pdp-art; }
 ::view-transition-old(pdp-art), ::view-transition-new(pdp-art) { animation-duration: .5s; }
 
@@ -2538,8 +2538,8 @@ html[lang='ar'] .adm-card h3 { text-transform: none; font-size: 13.5px; }
 /* --- a new page builds itself up ----------------------------------------- */
 .motion .page { animation: none; }
 .motion .intro {
-  animation: lift-in 1s var(--out-expo) both;
-  animation-delay: calc(90ms + var(--i, 0) * 70ms);
+  animation: lift-in .64s var(--out-expo) both;
+  animation-delay: calc(60ms + var(--i, 0) * 45ms);
 }
 /* text-like pieces also come out of a soft blur (glass cards don't: a filter
    would switch off their frosted backdrop while it plays) */
@@ -2559,8 +2559,8 @@ html[lang='ar'] .adm-card h3 { text-transform: none; font-size: 13.5px; }
 }
 .split .w > span { display: inline-block; }
 .motion .split .w > span {
-  animation: word-rise 1s var(--out-expo) both;
-  animation-delay: calc(110ms + var(--wi, 0) * 55ms);
+  animation: word-rise .72s var(--out-expo) both;
+  animation-delay: calc(80ms + var(--wi, 0) * 40ms);
 }
 @keyframes word-rise { from { transform: translateY(112%); } }
 
@@ -2568,24 +2568,24 @@ html[lang='ar'] .adm-card h3 { text-transform: none; font-size: 13.5px; }
 .motion .reveal { opacity: 0; transform: translateY(40px); animation: none !important; }
 .motion .reveal.in {
   opacity: 1; transform: none;
-  transition: opacity .8s var(--out-expo) calc(var(--r, 0) * 70ms), transform 1.1s var(--out-expo) calc(var(--r, 0) * 70ms) !important;
+  transition: opacity .55s var(--out-expo) calc(var(--r, 0) * 50ms), transform .7s var(--out-expo) calc(var(--r, 0) * 50ms) !important;
 }
 
 /* --- home carousel: the next slide wipes across, its art settles ---------- */
 .motion .slide {
   opacity: 1; visibility: hidden; z-index: 0;
   clip-path: inset(0 0 0 100%);
-  transition: clip-path 1.1s var(--inout-expo), visibility 0s linear 1.1s;
+  transition: clip-path .9s var(--inout-expo), visibility 0s linear .9s;
 }
-.motion .slide.on { visibility: visible; z-index: 2; clip-path: inset(0); transition: clip-path 1.1s var(--inout-expo); }
+.motion .slide.on { visibility: visible; z-index: 2; clip-path: inset(0); transition: clip-path .9s var(--inout-expo); }
 .motion .slide.was { visibility: visible; z-index: 1; clip-path: inset(0); transition: none; }
 .motion .slide.on .slide-art { animation: art-settle 1.6s var(--out-expo) both; }
 @keyframes art-settle { from { transform: scale(1.16); } }
 .motion .slide .split .w > span { animation: none; }
-.motion .slide.on .split .w > span { animation: word-rise 1s var(--out-expo) both; animation-delay: calc(380ms + var(--wi, 0) * 55ms); }
+.motion .slide.on .split .w > span { animation: word-rise .75s var(--out-expo) both; animation-delay: calc(300ms + var(--wi, 0) * 40ms); }
 .slide-body > :nth-child(1) { --k: 0; } .slide-body > :nth-child(2) { --k: 1; } .slide-body > :nth-child(3) { --k: 2; }
 .slide-body > :nth-child(4) { --k: 3; } .slide-body > :nth-child(5) { --k: 4; } .slide-body > :nth-child(6) { --k: 5; }
-.motion .slide.on .slide-body > :not(h1) { animation: lift-blur .9s var(--out-expo) both; animation-delay: calc(.46s + var(--k, 0) * 70ms); }
+.motion .slide.on .slide-body > :not(.slide-title) { animation: lift-blur .65s var(--out-expo) both; animation-delay: calc(.34s + var(--k, 0) * 45ms); }
 
 /* --- cards lean toward the pointer, with a sheen that follows it ---------- */
 .tile::before {
@@ -2649,13 +2649,13 @@ html[lang='ar'] .adm-card h3 { text-transform: none; font-size: 13.5px; }
 
 /* moving between categories, the covers shuffle like a deck */
 ::view-transition-old(cover-0), ::view-transition-old(cover-1), ::view-transition-old(cover-2) {
-  animation: cover-out .42s cubic-bezier(.5, 0, .75, 0) both; mix-blend-mode: normal;
+  animation: cover-out .3s cubic-bezier(.5, 0, .75, 0) both; mix-blend-mode: normal;
 }
 ::view-transition-new(cover-0), ::view-transition-new(cover-1), ::view-transition-new(cover-2) {
-  animation: cover-in .9s var(--out-expo) both; mix-blend-mode: normal;
+  animation: cover-in .7s var(--out-expo) both; mix-blend-mode: normal;
 }
-::view-transition-new(cover-1) { animation-delay: .07s; }
-::view-transition-new(cover-2) { animation-delay: .14s; }
+::view-transition-new(cover-1) { animation-delay: .05s; }
+::view-transition-new(cover-2) { animation-delay: .1s; }
 @keyframes cover-out { to { opacity: 0; transform: translateY(-14%) rotate(-7deg) scale(.92); } }
 @keyframes cover-in { from { opacity: 0; transform: translateY(24%) rotate(9deg) scale(.9); } }
 
@@ -2815,4 +2815,52 @@ button:not(:disabled), summary, label:has(> input), [data-view], .gsel-opt { cur
 @media (max-width: 960px) {
   .page { padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
   .rail { margin-bottom: env(safe-area-inset-bottom, 0px); }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   20. UI/UX Pro Max pass
+   ══════════════════════════════════════════════════════════════════════ */
+/* keyboard users can jump straight past the shell to the page */
+.skip-link {
+  position: fixed; top: 10px; inset-inline-start: 10px; z-index: 200;
+  padding: 12px 18px; border-radius: 12px;
+  background: #fff; color: var(--on-light); font-weight: 600; font-size: 15px;
+  transform: translateY(-160%); transition: transform .2s var(--out-expo);
+}
+.skip-link:focus-visible { transform: none; outline: 3px solid var(--teal); outline-offset: 2px; }
+
+/* prices and counts line up and don't jump when they change */
+.px, .now, .price-line, .line-total, .sum-row, .adm-price, .or-total, .vchip small, .total-row b, #grandTotal, #feeAmt,
+.stepper output, .rail-count, .pop-count, .fchip em, .filter-list em { font-variant-numeric: tabular-nums; }
+
+/* a button that's working shows it, and can't be pressed again */
+.btn.loading { position: relative; color: transparent !important; pointer-events: none; }
+.btn.loading::after {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px;
+  border-radius: 50%; border: 2px solid rgba(0, 0, 0, .18); border-top-color: var(--on-light);
+  animation: spin .8s linear infinite;
+}
+.btn:disabled:not(.loading) { opacity: .45; cursor: not-allowed; }
+
+/* every control shows where keyboard focus is */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.field input:focus-visible, .field textarea:focus-visible, .adm-inline:focus-visible, .search input:focus-visible,
+.search-field input:focus-visible, .gsel-search input:focus-visible { outline: none; }
+/* the page area takes focus after each page change (for screen readers): no ring needed there */
+#view:focus, #view:focus-visible { outline: none; }
+
+/* carousel copy always fits under the badge, whatever the screen height */
+.slide p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.slide .slide-title { font-size: clamp(28px, min(3.1vw, 4.6vh), 48px); }
+.slide-body { padding-top: 76px; }
+@media (max-height: 820px) and (min-width: 961px) {
+  .slide .chips { display: none; }
+  .slide p { -webkit-line-clamp: 1; }
+  .slide-body { gap: 10px; padding-bottom: 30px; padding-top: 64px; }
+  .slide .slide-title { font-size: clamp(26px, 4.2vh, 36px); }
+  .slide .price-line .now { font-size: 24px; }
+}
+@media (max-height: 740px) and (min-width: 961px) {
+  .slide p { display: none; }
 }

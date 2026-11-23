@@ -177,6 +177,26 @@ Settings → Appearance → Reduce motion, or the device's own setting, turns al
 If a device can't start a page transition within 300 ms, the page simply appears — the
 animation never makes anyone wait.
 
+## UI/UX checklist (UI/UX Pro Max)
+
+The site is checked against the UI/UX Pro Max rules, highest priority first:
+
+- **Accessibility** — one page title per page and no skipped heading levels; every control
+  has a name and a visible keyboard focus ring; a "Skip to content" link; text contrast
+  ≥ 4.5 : 1 and nothing under 12 px (all three languages); reduced motion respected.
+- **Touch** — every control has at least a 44 px tap area; no double-tap delay; form fields
+  are 16 px on phones so iPhone Safari doesn't zoom in.
+- **Style** — SVG icons only (no emoji), one icon family, prices in tabular figures.
+- **Layout** — no sideways scrolling at 390 / 820 / 1366 / 1920 px; page ends clear the
+  floating phone dock.
+- **Motion** — page builds in ~0.6–0.75 s with 40–50 ms staggers, exits faster than
+  entrances, interruptible, and skipped if a device is slow.
+- **Forms** — labels on every field, errors under the field, checked when you leave a
+  field and cleared as soon as it's fixed, focus moves to the first problem, Place order
+  shows a spinner and can't be pressed twice.
+- **Navigation** — every page has its own address; Back returns to the same scroll
+  position; the current tab is highlighted; breadcrumbs on deep pages.
+
 ## Languages
 
 English, French and Arabic, chosen from the globe button in the top bar or in

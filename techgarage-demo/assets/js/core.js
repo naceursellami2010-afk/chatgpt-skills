@@ -2,8 +2,8 @@
    Everything a page needs lives here so the views stay declarative. */
 
 import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, TOPUP_METHOD, PAYMENT_FEES,
-         RETIRED, CAT_NAMES, ADMIN_KEY, PAGE_SECTIONS, applyAdmin } from './data.js?v=20261124g';
-import { t, plural, price, date, word, blurb, num, lang } from './i18n.js?v=20261124g';
+         RETIRED, CAT_NAMES, ADMIN_KEY, PAGE_SECTIONS, applyAdmin } from './data.js?v=20261124i';
+import { t, plural, price, date, word, blurb, num, lang } from './i18n.js?v=20261124i';
 
 /* ── helpers ───────────────────────────────────────────────────────── */
 export const $  = (s, r = document) => r.querySelector(s);
@@ -115,6 +115,7 @@ export const ICON = {
   admin:  svg('<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><path d="M17.25 14v6.5M14 17.25h6.5"/>', 18, 1.8),
   up:     svg('<path d="M6 15l6-6 6 6"/>', 14, 2.4),
   trash:  svg('<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/>', 15, 1.9),
+  flame:  svg('<path d="M12 21c-3.9 0-7-2.8-7-6.6 0-2.6 1.5-4.6 3.2-6.3.4 1.7 1.3 2.8 2.4 3.4C10.3 8.3 11.6 5.3 14.5 3c-.2 2.9.9 4.8 2.4 6.6C18.3 11.2 19 12.8 19 14.4 19 18.2 15.9 21 12 21z"/><path d="M12 21c-1.7 0-3-1.2-3-2.9 0-1.6 1.1-2.6 2.3-3.6.2 1 .8 1.6 1.4 1.9.3-1.2.9-2.2 1.9-3 .2 1.1.7 1.9 1.1 2.6.3.6.3 1 .3 1.7 0 2-1.3 3.3-4 3.3z"/>', 15, 1.8),
   lock:   svg('<rect x="4" y="10.5" width="16" height="11" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>', 18, 1.8),
   globe:  svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>', 18, 1.8),
   download: svg('<path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/>', 16),

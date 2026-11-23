@@ -3,17 +3,17 @@
    hash router. Pages live in views.js; state and helpers in core.js;
    wording in i18n.js. */
 
-import { CATEGORIES, NOTIFICATIONS } from './data.js?v=20261124g';
-import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js?v=20261124g';
+import { CATEGORIES, NOTIFICATIONS } from './data.js?v=20261124i';
+import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js?v=20261124i';
 import {
   $, $$, byId, tnd, esc, avatarSrc, go, ICON, state, on,
   cartQty, cartTotal, setQty, addToCart, toggleWish, unreadCount, markRead, noteText,
   applyPrefs, searchProducts, media, fitAll, toast, catLabel, subLabel, subsOf, familyLead, FAMILY_CATS
-} from './core.js?v=20261124g';
-import { VIEWS } from './views.js?v=20261124g';
-import { admin } from './admin.js?v=20261124g';
-import { canMorph, motionOn, introduce, revealOnScroll, tiltCards } from './motion.js?v=20261124g';
-import { glassSelects, closeGlassSelect } from './glass-select.js?v=20261124g';
+} from './core.js?v=20261124i';
+import { VIEWS } from './views.js?v=20261124i';
+import { admin } from './admin.js?v=20261124i';
+import { canMorph, motionOn, introduce, revealOnScroll, tiltCards } from './motion.js?v=20261124i';
+import { glassSelects, closeGlassSelect } from './glass-select.js?v=20261124i';
 
 VIEWS.admin = admin;
 
@@ -392,7 +392,24 @@ let running = null;   // the view transition in progress, if any
 const clearNames = () => document.querySelectorAll('.media[style*="view-transition-name"]')
   .forEach(m => m.style.removeProperty('view-transition-name'));
 
+/* Back and Forward return to where you were on that page: each history entry
+   gets a key, and the scroll position is remembered per key. */
+const scrolls = new Map();
+let entrySeq = 0;
+const pageScroll = () => Math.max(view.scrollTop, scrollY);
+const entryKey = () => {
+  if (!history.state?.tg) history.replaceState({ ...(history.state || {}), tg: `${Date.now()}-${++entrySeq}` }, '');
+  return history.state.tg;
+};
+let currentEntry = null;
+function restoreScroll() {
+  const y = scrolls.get(currentEntry);
+  if (y) { view.scrollTop = y; scrollTo(0, y); }
+}
+
 function route({ keepScroll = false } = {}) {
+  if (!keepScroll && currentEntry) scrolls.set(currentEntry, pageScroll());
+  if (!keepScroll) currentEntry = entryKey();
   const next = resolve(), prev = current;
   motionOn();
   // a click while a transition is still playing: finish it at once, show the page plainly
@@ -401,7 +418,7 @@ function route({ keepScroll = false } = {}) {
   if (busy || keepScroll || !prev || !canMorph() || document.hidden) {
     clearNames();
     render(next, keepScroll);
-    if (!keepScroll) { introduce(view); revealOnScroll(view); }
+    if (!keepScroll) { restoreScroll(); introduce(view); revealOnScroll(view); }
     return;
   }
   const root = document.documentElement;
@@ -413,6 +430,7 @@ function route({ keepScroll = false } = {}) {
   const vt = document.startViewTransition(() => {
     clearTimeout(guard);
     render(next, false);
+    restoreScroll();
     if (sameShop) { view.querySelector('.page')?.classList.add('settled'); return; }
     if (back) {                       // the product's card takes the picture back
       const m = view.querySelector(`[data-view="${CSS.escape(back)}"] .media`);
@@ -458,6 +476,7 @@ on('catalog', () => {
 });
 
 addEventListener('hashchange', () => route());
+$('.skip-link').addEventListener('click', () => view.focus());
 tiltCards(document);
 /* The pill must follow its tab's real width, which changes when a web font
    arrives (the Arabic one loads only when Arabic text appears) or the
