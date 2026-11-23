@@ -2,8 +2,8 @@
    Everything a page needs lives here so the views stay declarative. */
 
 import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, TOPUP_METHOD, PAYMENT_FEES,
-         RETIRED, CAT_NAMES, ADMIN_KEY, PAGE_SECTIONS, applyAdmin } from './data.js?v=20261124o';
-import { t, plural, price, date, word, blurb, num, lang } from './i18n.js?v=20261124o';
+         RETIRED, CAT_NAMES, ADMIN_KEY, PAGE_SECTIONS, applyAdmin } from './data.js?v=20261124t';
+import { t, plural, price, date, word, blurb, num, lang } from './i18n.js?v=20261124t';
 
 /* ── helpers ───────────────────────────────────────────────────────── */
 export const $  = (s, r = document) => r.querySelector(s);
@@ -33,7 +33,11 @@ function reindex() {
    shows one tile per brand, and the product page switches region and
    value inside it. Region and value are read from the store's own titles. */
 export const FAMILY_CATS = [];   // categories browsed by brand — filled by reindex()
-export const familyOf = p => (p && FAMILY_CATS.includes(p.cat) ? p.sub : null);
+export const familyOf = p => (!p ? null : p.game ? `game:${p.game}` : FAMILY_CATS.includes(p.cat) ? p.sub : null);
+/** Is this product a version of a game (platform + key/account)? */
+export const isGameVersion = p => !!p?.game;
+/** 'key' or 'account' — how a game version is delivered. */
+export const versionKind = p => (deliveryType(p) === 'account' ? 'account' : 'key');
 export const familyVariants = fam => PRODUCTS.filter(p => familyOf(p) === fam);
 export const familyLead = fam => familyVariants(fam)[0];
 
@@ -566,7 +570,7 @@ export const tile = (p, i = 0) => `
 
 /** One tile for a whole brand: lead photo, "From 40 DT", number of options. */
 export const familyTile = (fam, i = 0) => {
-  const vs = familyVariants(fam), p = vs[0], low = Math.min(...vs.map(v => v.price)), name = subLabel(fam);
+  const vs = familyVariants(fam), p = vs[0], low = Math.min(...vs.map(v => v.price)), name = p.game ? p.short : subLabel(fam);
   if (vs.length < 2) return tile(p, i);
   return `
   <article class="tile tile-family" data-view="${p.id}" style="--d:${Math.min(i, 12) * 45}ms;--vt:tile-${p.id}">

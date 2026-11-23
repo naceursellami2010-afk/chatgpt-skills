@@ -4,14 +4,14 @@
    (see applyAdmin in data.js), saved with commitAdmin(), which re-indexes
    the catalogue and redraws the store — no reload, no server. */
 
-import { PRODUCTS, CATEGORIES, SUB_NAMES, HERO, NEW_DROPS, CAT_NAMES, PAGE_SECTIONS, ADMIN_KEY, loadAdmin, shipped } from './data.js?v=20261124o';
-import { LANGS, t, tIn, plural, lang, langInfo } from './i18n.js?v=20261124o';
+import { PRODUCTS, CATEGORIES, SUB_NAMES, HERO, NEW_DROPS, CAT_NAMES, PAGE_SECTIONS, ADMIN_KEY, PLATFORMS, loadAdmin, shipped } from './data.js?v=20261124t';
+import { LANGS, t, tIn, plural, lang, langInfo } from './i18n.js?v=20261124t';
 import {
   $, $$, byId, tnd, esc, catLabel, subLabel, subsOf, go, ICON, media, fitAll, toast, commitAdmin,
   isListed, listed, regionOf, valueOf, deliveryType, topupMethod, allOrders, orderTotal,
-  stock, stockOf, stockState, usesKeys, addKeys, removeKey, replaceStock, LOW_STOCK
-} from './core.js?v=20261124o';
-import { pageHead, field, emptyState, toggle } from './views.js?v=20261124o';
+  stock, stockOf, stockState, usesKeys, addKeys, removeKey, replaceStock, LOW_STOCK, versionKind
+} from './core.js?v=20261124t';
+import { pageHead, field, emptyState, toggle } from './views.js?v=20261124t';
 
 /* ── the owner's record ────────────────────────────────────────────── */
 const clone = v => JSON.parse(JSON.stringify(v));
@@ -324,6 +324,13 @@ function productForm(id) {
             </div>
           </div>
           <div class="field-row">
+            ${sel('game', t('adm.game'), `<option value="">${esc(t('adm.gameNone'))}</option><option value="__new">${esc(t('adm.gameNew'))}</option>` +
+              options([...new Map(PRODUCTS.filter(x => x.game).map(x => [x.game, x])).values()]
+                .sort((a, b) => a.short.localeCompare(b.short)).map(x => [x.game, x.short]), v.game || ''))}
+            ${sel('platform', t('adm.platform'), `<option value="">—</option>` + options(PLATFORMS.map(pl => [pl, t('plat.' + pl)]), v.platform || ''))}
+          </div>
+          <p class="hint adm-game-hint">${esc(t('adm.gameD'))}</p>
+          <div class="field-row">
             ${sel('delivery', t('adm.delivery'), options(DELIVERIES.map(([d, k]) => [d, t(k)]), delivery))}
             <div id="topupWrap" ${showTopup ? '' : 'hidden'}>${sel('topup', t('adm.topup'), options(TOPUPS.map(([d, k]) => [d, t(k)]), p ? topupMethod(p) : 'id'))}</div>
           </div>
@@ -405,6 +412,11 @@ function mountProductForm(el) {
       msg(f.price, priceVal > 0 ? '' : t('adm.priceNeeded')),
       msg(f.sub, f.sub.value ? '' : t('adm.nameNeeded'))
     ];
+    // a new version of an existing game borrows that game's photo when none is given
+    if (!f.img.value && f.game.value && f.game.value !== '__new') {
+      const lead = PRODUCTS.find(x => x.game === f.game.value);
+      if (lead) f.img.value = lead.img;
+    }
     const hasPhoto = !!f.img.value;
     $('#photoMsg', form).textContent = hasPhoto ? '' : t('adm.photoNeeded');
     if (ok.includes(false) || !hasPhoto) { (ok.indexOf(false) >= 0 ? [f.short, f.price, f.sub][ok.indexOf(false)] : $('#photoFile', form).parentElement).focus?.(); return; }
@@ -419,7 +431,9 @@ function mountProductForm(el) {
       url: f.url.value.trim() || undefined,
       region: f.region.value || undefined, value: f.value.value.trim() || undefined,
       delivery: f.delivery.value || undefined,
-      topup: !$('#topupWrap', form).hidden ? f.topup.value : undefined
+      topup: !$('#topupWrap', form).hidden ? f.topup.value : undefined,
+      game: f.game.value === '__new' ? (slug(short) || undefined) : (f.game.value || undefined),
+      platform: f.platform.value || undefined
     };
     const id = form.dataset.id;
     if (!id) {                                    // a new product

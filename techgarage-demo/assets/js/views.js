@@ -4,8 +4,8 @@
    the shell, so most markup only needs data-* attributes.
    Every visible word goes through t() / plural() from i18n.js. */
 
-import { PRODUCTS, CATEGORIES, HERO, NEW_DROPS, RECENT, NOTIFICATIONS, STORE, PAYMENT_METHODS, ACCENTS, AVATARS } from './data.js?v=20261124o';
-import { LANGS, t, plural, blurb, word, faq, lang, setLang, isRTL } from './i18n.js?v=20261124o';
+import { PRODUCTS, CATEGORIES, HERO, NEW_DROPS, RECENT, NOTIFICATIONS, STORE, PAYMENT_METHODS, ACCENTS, AVATARS } from './data.js?v=20261124t';
+import { LANGS, t, plural, blurb, word, faq, lang, setLang, isRTL } from './i18n.js?v=20261124t';
 import {
   $, $$, byId, tnd, esc, catLabel, subLabel, subsOf, avatarSrc, payLabel, fmtDate, go, ICON, state,
   cartQty, cartTotal, setQty, addToCart, markViewed, clearViewed, unreadCount, markRead, noteText,
@@ -13,10 +13,10 @@ import {
   paymentFee, feeLabel,
   deliveryType, credential, searchProducts, media, heartBtn, tile, toast, exportData, resetEverything,
   familyOf, familyVariants, familyLead, familyTile, regionOf, valueOf, topupMethod, FAMILY_CATS,
-  isListed, listed, sectionHidden, secTitle, stockState, stockOf, maxBuyable
-} from './core.js?v=20261124o';
-import { PAGE_SECTIONS } from './data.js?v=20261124o';
-import { splitWords, parallax } from './motion.js?v=20261124o';
+  isListed, listed, sectionHidden, secTitle, stockState, stockOf, maxBuyable, isGameVersion, versionKind
+} from './core.js?v=20261124t';
+import { PAGE_SECTIONS, PLATFORMS } from './data.js?v=20261124t';
+import { splitWords, parallax } from './motion.js?v=20261124t';
 
 /* Where a subcategory link goes: brands (gift cards, mobile games) open their
    product page, where region and value are picked; others open the shop. */
@@ -460,7 +460,7 @@ const shop = {
    Product
    ══════════════════════════════════════════════════════════════════════ */
 function howItWorks(p) {
-  const platform = word(p.tags[0]).replace(/ Key$/, '');
+  const platform = p.platform ? t('plat.' + p.platform) : word(p.tags[0]).replace(/ Key$/, '');
   switch (deliveryType(p)) {
     case 'account': return [[t('how.pay'), t('how.payD')], [t('how.loginT'), t('how.emailD')], [t('how.ownT'), t('how.ownD')]];
     case 'topup': {
@@ -483,7 +483,34 @@ function stockBadge(id) {
 }
 
 /** Region and value (or amount) chips that switch between a brand's variants. */
+/** A game's page: pick the platform, then a key or an account. Versions the
+    store doesn't sell (yet) show greyed out as "Not available". */
+function gamePicker(p) {
+  const vs = familyVariants(familyOf(p));
+  const plat = p.platform || 'pc', kind = versionKind(p);
+  const pickFor = pl => vs.find(v => v.platform === pl && versionKind(v) === kind) || vs.find(v => v.platform === pl);
+  const group = (key, chips) => `
+    <div class="vgroup"><span class="vlabel" id="vl-${key.replace('.', '-')}">${esc(t(key))}</span>
+      <div class="vchips" role="radiogroup" aria-labelledby="vl-${key.replace('.', '-')}">${chips}</div></div>`;
+  const chip = (target, on, label, sub) => target
+    ? `<a class="vchip${stockState(target.id) === 'out' ? ' is-out' : ''}" href="#/product/${target.id}" role="radio" aria-checked="${on}" data-variant><b>${esc(label)}</b><small>${esc(sub)}</small></a>`
+    : `<span class="vchip is-na" role="radio" aria-checked="false" aria-disabled="true"><b>${esc(label)}</b><small>${esc(t('pdp.notAvail'))}</small></span>`;
+  const priceOf = v => (stockState(v.id) === 'out' ? t('stock.out') : tnd(v.price));
+  const low = list => list.length ? t('fam.from', { price: tnd(Math.min(...list.map(v => v.price))) }) : '';
+  return `<div class="variants">
+    ${group('pdp.platform', PLATFORMS.map(pl => {
+      const on = vs.filter(v => v.platform === pl), target = pickFor(pl);
+      return chip(target, pl === plat, t('plat.' + pl), on.length > 1 ? low(on) : target ? priceOf(target) : '');
+    }).join(''))}
+    ${group('pdp.edition', ['key', 'account'].map(k => {
+      const target = vs.find(v => v.platform === plat && versionKind(v) === k);
+      return chip(target, k === kind, t('kind.' + k), target ? priceOf(target) : '');
+    }).join(''))}
+  </div>`;
+}
+
 function variantPicker(p) {
+  if (isGameVersion(p)) return gamePicker(p);
   const fam = familyOf(p);
   const vs = fam ? familyVariants(fam) : [];
   if (vs.length < 2) return '';
@@ -509,14 +536,16 @@ const product = {
     if (!p) return notFound.render();
     const fam = familyOf(p);
     // a brand page suggests other brands; anything else suggests its neighbours
-    const related = fam
-      ? [...new Set(PRODUCTS.filter(x => x.cat === p.cat && x.sub !== fam).map(x => x.sub))].slice(0, 5)
+    const related = isGameVersion(p)            // a game suggests other games
+      ? [...new Set(PRODUCTS.filter(x => x.game && x.game !== p.game).map(familyOf))].slice(0, 5)
+      : fam
+      ? [...new Set(PRODUCTS.filter(x => x.cat === p.cat && x.sub !== fam).map(x => x.sub))].filter(f => familyVariants(f).length).slice(0, 5)
       : [...PRODUCTS.filter(x => x.sub === p.sub && x.id !== p.id),
          ...PRODUCTS.filter(x => x.cat === p.cat && x.sub !== p.sub)].slice(0, 5);
     const type = deliveryType(p);
     return `
       <div class="page">
-        ${crumbs([[t('home'), '#/'], [catLabel(p.cat), `#/shop/${p.cat}`], ...(fam ? [] : [[subLabel(p.sub), `#/shop/${p.cat}/${p.sub}`]]), [p.short, '']])}
+        ${crumbs([[t('home'), '#/'], [catLabel(p.cat), `#/shop/${p.cat}`], ...(fam && !isGameVersion(p) ? [] : [[subLabel(p.sub), `#/shop/${p.cat}/${p.sub}`]]), [p.short, '']])}
         <div class="pdp">
           ${media(p, 'pdp-art', { adapt: true, eager: true, alt: p.short })}
           <div class="pdp-info">
@@ -557,7 +586,7 @@ const product = {
             <div><dt>${esc(t('spec.platform'))}</dt><dd>${esc(word(p.tags[0]))}</dd></div>
             <div><dt>${esc(t('spec.type'))}</dt><dd>${esc(word(p.tags[1] || '—'))}</dd></div>
             <div><dt>${esc(t('spec.includes'))}</dt><dd>${esc(p.specs.map(word).join(' · '))}</dd></div>
-            ${fam && familyVariants(fam).length > 1 ? `<div><dt>${esc(t('pdp.region'))}</dt><dd>${esc(t('region.' + regionOf(p)))}</dd></div>` : ''}
+            ${fam && !isGameVersion(p) && familyVariants(fam).length > 1 ? `<div><dt>${esc(t('pdp.region'))}</dt><dd>${esc(t('region.' + regionOf(p)))}</dd></div>` : ''}
             <div><dt>${esc(t('spec.delivery'))}</dt><dd>${esc(dlvText(p))}</dd></div>
             <div><dt>${esc(t('spec.price'))}</dt><dd>${esc(t('spec.priceTax', { price: tnd(p.price) }))}</dd></div>
           </dl>
@@ -565,7 +594,7 @@ const product = {
 
         <section class="block" ${sectionHidden('pdp.related') ? 'hidden' : ''}>
           ${fam
-            ? `<div class="block-head"><h2>${esc(t('pdp.otherBrands'))}</h2><a class="see-all" href="#/shop/${p.cat}">${esc(t('pdp.moreIn', { cat: catLabel(p.cat) }))}</a></div>
+            ? `<div class="block-head"><h2>${esc(t(isGameVersion(p) ? 'pdp.moreGames' : 'pdp.otherBrands'))}</h2><a class="see-all" href="#/shop/${p.cat}">${esc(t('pdp.moreIn', { cat: catLabel(p.cat) }))}</a></div>
                <div class="grid-tiles">${related.map(familyTile).join('')}</div>`
             : `<div class="block-head"><h2>${esc(t('pdp.related'))}</h2><a class="see-all" href="#/shop/${p.cat}/${p.sub}">${esc(t('pdp.moreIn', { cat: subLabel(p.sub) }))}</a></div>
                <div class="grid-tiles">${related.map(tile).join('')}</div>`}

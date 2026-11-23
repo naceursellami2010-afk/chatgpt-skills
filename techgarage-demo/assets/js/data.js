@@ -990,6 +990,19 @@ export const STORE = {
 export const ADMIN_KEY = 'tg.admin';
 
 const copy = v => JSON.parse(JSON.stringify(v));
+/* Games: each product is one version of a game — a platform (PC / Xbox / PS5)
+   delivered as a key or an account. Products that share `game` are shown on one
+   page with a platform and key/account picker; every game has its own page.
+   Fresh accounts and keys on techgarage.tn are PC (Steam / Ubisoft); the
+   PlayStation games are PS5. Top-ups aren't game versions. */
+const GAME_PLATFORM = { accounts: 'pc', keys: 'pc', ps: 'ps5' };
+for (const p of PRODUCTS) {
+  if (p.cat !== 'games' || !GAME_PLATFORM[p.sub]) continue;
+  p.game ??= p.id.replace(/^ps-/, '');
+  p.platform ??= GAME_PLATFORM[p.sub];
+}
+export const PLATFORMS = ['pc', 'xbox', 'ps5'];
+
 const SHIPPED = copy({ PRODUCTS, CATEGORIES, SUB_NAMES, HERO, NEW_DROPS });
 
 /* Products the owner removed. Past orders still need their name and price,

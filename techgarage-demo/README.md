@@ -95,6 +95,15 @@ store's own product titles (`regionOf` / `valueOf` in `core.js`), so a new produ
 its brand without extra data. Switching replaces the page in history rather than piling
 up Back steps. Search still lists every individual card.
 
+### Game platforms
+
+Every game has its own page. On it the shopper picks the **platform — PC, Xbox or
+PlayStation 5 —** and then **Key or Account**; price, picture and delivery follow the
+choice. Versions the store doesn't sell (yet) show greyed out as "Not available". Each
+product carries `game` and `platform` (techgarage.tn's fresh accounts and keys are PC, its
+PlayStation games PS5); in the admin product form, **Game** and **Platform** put a new
+version on an existing game's page (it borrows that game's photo if none is given).
+
 ### Game top-ups
 
 Each game is topped up the way its publisher requires (`TOPUP_METHOD` in `data.js`):

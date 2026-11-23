@@ -6,7 +6,7 @@
    Everything here steps aside when the shopper (or their device) asks for
    reduced motion. */
 
-import { calm, esc } from './core.js?v=20261124o';
+import { calm, esc } from './core.js?v=20261124t';
 
 /** Is rich motion wanted right now? Also mirrored as html.motion for the CSS. */
 export function motionOn() {

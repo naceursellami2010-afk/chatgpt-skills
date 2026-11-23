@@ -5,8 +5,8 @@
    wrong on a phone or a trackpad. The real <select> stays underneath and
    keeps the value, so forms, change events and screen readers work as before. */
 
-import { esc, ICON } from './core.js?v=20261124o';
-import { t } from './i18n.js?v=20261124o';
+import { esc, ICON } from './core.js?v=20261124t';
+import { t } from './i18n.js?v=20261124t';
 
 const CHEVRON = '<svg class="gsel-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 let openPanel = null;
