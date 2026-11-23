@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "arena": "^0.0.2",
+    "claude-consult-mcp": "^0.14.0",
     "graphify": "^1.0.0",
     "ponytail": "^1.0.57"
   },
