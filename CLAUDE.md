@@ -14,8 +14,7 @@ This repository is a curated skills library. Prefer maintaining a smaller number
 
 ```bash
 python3 skill-creator/scripts/quick_validate.py path/to/skill
-python3 audit_all_skills.py
-python3 verify_docs.py
+python3 -m unittest discover tests
 ```
 
 ## Catalog
