@@ -927,13 +927,26 @@ export const NOTIFICATIONS = [   // wording lives in i18n.js under the same id
 
 /* The shopper's earlier orders — demo history, consistent with RECENT above. */
 export const ORDERS_SEED = [
-  { id: 'TG-1042', date: '2026-11-12T14:20:00', items: [['elden-ring', 1]],                     status: 'delivered', payment: 'card' },
-  { id: 'TG-1037', date: '2026-11-03T19:05:00', items: [['valorant-20', 1], ['efootball-1000', 1]], status: 'delivered', payment: 'd17', playerId: '51 873 2290' },
-  { id: 'TG-1029', date: '2026-10-21T10:41:00', items: [['minecraft', 1], ['steam-20', 1]],     status: 'delivered', payment: 'card' }
+  { id: 'TG-1042', date: '2026-11-12T14:20:00', items: [['elden-ring', 1]],                     status: 'delivered', payment: 'clictopay' },
+  { id: 'TG-1037', date: '2026-11-03T19:05:00', items: [['valorant-20', 1], ['efootball-1000', 1]], status: 'delivered', payment: 'd17',
+    accounts: { efootball: { method: 'loginFull', email: 'sami.benali@example.com', uid: '512 873 229', platform: 'android' } } },
+  { id: 'TG-1029', date: '2026-10-21T10:41:00', items: [['minecraft', 1], ['steam-20', 1]],     status: 'delivered', payment: 'clictopay' }
 ];
 
-/* Placeholder options for the demo checkout — swap for what the store accepts. */
-export const PAYMENT_METHODS = ['card', 'd17', 'transfer'];   // names in i18n.js
+/* ClicToPay is the gateway techgarage.tn shows (bank cards: Visa, Mastercard,
+   CIB, e-Dinar). D17 and bank transfer are common in Tunisia — confirm with the store. */
+export const PAYMENT_METHODS = ['clictopay', 'd17', 'transfer'];   // names in i18n.js
+
+/* How each mobile game is topped up. Some publishers credit by player ID;
+   others need the shopper's game login so the store can sign in and buy.
+     loginFull — email + password + UID + Android/iOS
+     login     — email + password
+     id        — player ID (every game not listed) */
+export const TOPUP_METHOD = {
+  efootball: 'loginFull', codm: 'loginFull',
+  coc: 'login', wildrift: 'login', brawlstars: 'login', genshin: 'login', '8ball': 'login',
+  fcmobile: 'login', wuwa: 'login', clashroyale: 'login', roblox: 'login', hsr: 'login'
+};
 
 export const ACCENTS = [   // names in i18n.js as acc.<id>
   { id: 'teal',   value: '#38a699' },

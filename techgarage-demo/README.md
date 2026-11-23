@@ -63,11 +63,11 @@ refresh and the browser's Back button all work.
 | Page | Address | What's on it |
 | --- | --- | --- |
 | Home | `#/` | Hero carousel, New Drops, Recently Viewed (your real history), a full-width shelf |
-| Shop | `#/shop`, `#/shop/<category>`, `#/shop/<category>/<sub>` | Every product, a category or a subcategory; subcategory chips with counts, a nested sidebar, price filters, sorting |
+| Shop | `#/shop`, `#/shop/<category>`, `#/shop/<category>/<sub>` | Every product or a category; gift cards and mobile games show one tile per brand ("From 40 DT · 3 options"); a nested sidebar, price filters, sorting |
 | Search | `#/shop?q=…` | Ranked results; the top-bar search suggests as you type |
-| Product | `#/product/<id>` | Artwork, price, quantity, buy / add / save, how delivery works, details, related products, link to the live store |
+| Product | `#/product/<id>` | Artwork, price, quantity, buy / add / save; for a brand, region and value (or amount) chips that switch card; how delivery works, details, related products or other brands, link to the live store |
 | Wishlist | `#/wishlist` | Saved products, add all to basket |
-| Checkout | `#/checkout` | Contact details, player ID for top-ups, payment choice, validation, order summary |
+| Checkout | `#/checkout` | Contact filled in from the account (edit, save back), one block per game for top-ups, ClicToPay / D17 / transfer, validation, order summary |
 | Order | `#/order/<id>` | Confirmation, progress timeline, delivered codes and logins (reveal / copy) |
 | Orders | `#/orders` | Order history with status |
 | Profile | `#/profile` | Account summary, stats, every key and account you've been delivered |
@@ -80,14 +80,45 @@ category tabs, search, notifications, the account menu and a slide-out basket.
 
 Everything you do — basket, wishlist, orders, profile, settings, history — is saved in
 your browser. Checkout takes no payment: a placed order "delivers" a few seconds later
-with demo codes, all of which start with `DEMO` and are not real. The payment options
-are placeholders to swap for what the store actually accepts.
+with demo codes, all of which start with `DEMO` and are not real.
+
+### Brands and variants
+
+Gift cards and mobile games are browsed one brand at a time. The Gift Cards and Mobile
+pages, the subcategory menu and the sidebar all lead to a brand's page, where **Region**
+(France, United States, Turkey, Europe, India, Global) and **Card value** — or **Amount**
+for games — switch between that brand's products. Region and value are read from the
+store's own product titles (`regionOf` / `valueOf` in `core.js`), so a new product joins
+its brand without extra data. Switching replaces the page in history rather than piling
+up Back steps. Search still lists every individual card.
+
+### Game top-ups
+
+Each game is topped up the way its publisher requires (`TOPUP_METHOD` in `data.js`):
+
+| Asks for | Games |
+| --- | --- |
+| Email, password, UID, Android or iOS | eFootball, Call of Duty Mobile |
+| Email and password | Clash of Clans, LoL: Wild Rift, Brawl Stars, Genshin Impact, 8 Ball Pool, FC Mobile, Wuthering Waves, Clash Royale, Roblox, Honkai: Star Rail |
+| Player ID | every other game |
+
+Checkout shows one block per game in the basket, with validation and a show-password
+button. **Passwords are never stored**: they are dropped before the order is saved. The
+game email, UID, phone type and player ID are remembered and filled in next time.
+
+### Payment
+
+techgarage.tn shows **ClicToPay** as its payment gateway (bank cards: Visa, Mastercard,
+CIB and e-Dinar), so it is the default. Choosing it shows a short "opening the secure
+ClicToPay page" step that stands in for the bank's page — no card details are ever asked
+for here. D17 and bank transfer are also offered; confirm with the store which it accepts
+and edit `PAYMENT_METHODS` in `data.js`.
 
 ## Languages
 
 English, French and Arabic, chosen from the globe button in the top bar or in
 Settings → Appearance, and remembered. Every phrase, product description, the FAQ,
-notifications, dates and prices are translated (`assets/js/i18n.js`, 339 phrases per
+notifications, dates and prices are translated (`assets/js/i18n.js`, 368 phrases per
 language). Counts use each language's plural rules, so Arabic gets its one / two / few /
 many forms. Prices read `180 DT` in English and French and `180 د.ت` in Arabic.
 

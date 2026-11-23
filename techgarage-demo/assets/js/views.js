@@ -10,8 +10,17 @@ import {
   $, $$, byId, tnd, esc, catLabel, subLabel, subsOf, avatarSrc, payLabel, fmtDate, go, ICON, state,
   cartQty, cartTotal, setQty, addToCart, markViewed, clearViewed, unreadCount, markRead, noteText,
   saveProfile, savePrefs, calm, allOrders, getOrder, orderTotal, orderCount, placeOrder,
-  deliveryType, credential, searchProducts, media, heartBtn, tile, toast, exportData, resetEverything
+  deliveryType, credential, searchProducts, media, heartBtn, tile, toast, exportData, resetEverything,
+  familyOf, familyVariants, familyLead, familyTile, regionOf, valueOf, topupMethod, FAMILY_CATS
 } from './core.js';
+
+/* Where a subcategory link goes: brands (gift cards, mobile games) open their
+   product page, where region and value are picked; others open the shop. */
+const subHref = (cat, sub, s = {}) => FAMILY_CATS.includes(cat) && familyLead(sub)
+  ? `#/product/${familyLead(sub).id}` : shopHash({ ...s, cat, sub });
+
+/** What the delivery line says: login top-ups read differently from ID ones. */
+const dlvText = p => t(deliveryType(p) === 'topup' && topupMethod(p) !== 'id' ? 'dlv.login' : 'dlv.' + deliveryType(p));
 
 /* ── shared page pieces ────────────────────────────────────────────── */
 const crumbs = list => `<nav class="crumbs" aria-label="${esc(t('crumbs'))}">${list.map(([label, href], i) =>
@@ -325,7 +334,17 @@ function shopState(ctx) {
     base = base.filter(p => p.price >= lo && p.price < hi);
   }
   if (sort !== 'featured') base = sortList(base, sort);
-  return { cat, sub, q, price, sort, list: base, inCat };
+  // outside search and a single brand, each gift card brand / mobile game is one tile
+  const grouped = !q && !sub, seen = new Set(), items = [];
+  for (const p of base) {
+    const fam = grouped && familyOf(p);
+    if (!fam) items.push({ p });
+    else if (!seen.has(fam)) { seen.add(fam); items.push({ fam }); }
+  }
+  // a brand tile shows its lowest price, so price sorting goes by that
+  const shown = it => it.p ? it.p.price : Math.min(...familyVariants(it.fam).map(v => v.price));
+  if (sort === 'low' || sort === 'high') items.sort((a, b) => (shown(a) - shown(b)) * (sort === 'high' ? -1 : 1));
+  return { cat, sub, q, price, sort, list: base, inCat, items };
 }
 
 const shop = {
@@ -338,10 +357,11 @@ const shop = {
       ...(s.sub ? [[subLabel(s.sub), '']] : []),
       ...(s.q ? [[`“${s.q}”`, '']] : [])];
     const cats = CATEGORIES.filter(c => c.id !== 'all');
-    const subs = s.cat ? subsOf(s.cat).filter(id => s.inCat.some(p => p.sub === id)) : [];
+    // brand pages already show one tile per brand, so the chip row would repeat them
+    const subs = s.cat && !FAMILY_CATS.includes(s.cat) ? subsOf(s.cat).filter(id => s.inCat.some(p => p.sub === id)) : [];
     return `
       <div class="page">
-        ${pageHead(title, plural('products', s.list.length), trail, `
+        ${pageHead(title, plural('products', s.items.length), trail, `
           <label class="select-wrap">
             <span class="sr">${esc(t('shop.sort'))}</span>
             <select id="shopSort" class="select">
@@ -351,7 +371,7 @@ const shop = {
         ${subs.length ? `
           <nav class="sub-chips" aria-label="${esc(catLabel(s.cat))}">
             <a class="fchip" href="${shopHash({ ...s, sub: '' })}" ${!s.sub ? 'aria-current="true"' : ''}>${esc(t('sub.all'))} <em>${s.inCat.length}</em></a>
-            ${subs.map(id => `<a class="fchip" href="${shopHash({ ...s, sub: id })}" ${s.sub === id ? 'aria-current="true"' : ''}>${esc(subLabel(id))} <em>${s.inCat.filter(p => p.sub === id).length}</em></a>`).join('')}
+            ${subs.map(id => `<a class="fchip" href="${subHref(s.cat, id, s)}" ${s.sub === id ? 'aria-current="true"' : ''}>${esc(subLabel(id))} <em>${s.inCat.filter(p => p.sub === id).length}</em></a>`).join('')}
           </nav>` : ''}
         <div class="shop">
           <aside class="filters card" aria-label="${esc(t('shop.filters'))}">
@@ -361,7 +381,7 @@ const shop = {
               ${cats.map(c => `
                 <a href="${shopHash({ ...s, cat: c.id, sub: '' })}" ${s.cat === c.id && !s.sub ? 'aria-current="true"' : ''} ${s.cat === c.id ? 'data-open' : ''}>${esc(catLabel(c.id))} <em>${PRODUCTS.filter(p => p.cat === c.id).length}</em></a>
                 ${s.cat === c.id ? `<div class="filter-subs">${subsOf(c.id).map(id =>
-                  `<a href="${shopHash({ ...s, sub: id })}" ${s.sub === id ? 'aria-current="true"' : ''}>${esc(subLabel(id))} <em>${PRODUCTS.filter(p => p.sub === id).length}</em></a>`).join('')}</div>` : ''}`).join('')}
+                  `<a href="${subHref(c.id, id, s)}" ${s.sub === id ? 'aria-current="true"' : ''}>${esc(subLabel(id))} <em>${PRODUCTS.filter(p => p.sub === id).length}</em></a>`).join('')}</div>` : ''}`).join('')}
             </nav>
             <h3>${esc(t('shop.price'))}</h3>
             <div class="chip-row">
@@ -370,8 +390,8 @@ const shop = {
             ${s.q || s.price !== 'any' || s.sort !== 'featured' ? `<a class="clear-filters" href="${shopHash({ cat: s.cat, sub: s.sub })}">${esc(t('shop.clear'))}</a>` : ''}
           </aside>
           <section class="shop-results">
-            ${s.list.length
-              ? `<div class="grid-tiles">${s.list.map(tile).join('')}</div>`
+            ${s.items.length
+              ? `<div class="grid-tiles">${s.items.map((it, i) => it.fam ? familyTile(it.fam, i) : tile(it.p, i)).join('')}</div>`
               : emptyState(ICON.search, t('shop.none'), esc(s.q ? t('shop.noneQ', { q: s.q }) : t('shop.nonePrice')),
                   `<a class="btn btn-solid" href="${shopHash({ cat: s.cat, sub: s.sub })}">${esc(t('shop.clear'))}</a>`)}
           </section>
@@ -391,10 +411,34 @@ function howItWorks(p) {
   const platform = word(p.tags[0]).replace(/ Key$/, '');
   switch (deliveryType(p)) {
     case 'account': return [[t('how.pay'), t('how.payD')], [t('how.loginT'), t('how.emailD')], [t('how.ownT'), t('how.ownD')]];
-    case 'topup':   return [[t('how.idT'), t('how.idD')], [t('how.pay'), t('how.payShort')], [t('how.creditT'), t('how.creditD')]];
+    case 'topup': {
+      const m = topupMethod(p);
+      const first = m === 'id' ? [t('how.idT'), t('how.idD')] : [t('how.gameLoginT'), t(m === 'loginFull' ? 'how.gameLoginFullD' : 'how.gameLoginD')];
+      return [first, [t('how.pay'), t('how.payShort')], [t('how.creditT'), t('how.creditD')]];
+    }
     case 'code':    return [[t('how.pay'), t('how.payShort')], [t('how.codeT'), t('how.emailD')], [t('how.redeemT', { platform }), t('how.redeemD')]];
     default:        return [[t('how.pay'), t('how.payShort')], [t('how.keyT'), t('how.emailD')], [t('how.activateT', { platform }), t('how.activateD')]];
   }
+}
+
+/** Region and value (or amount) chips that switch between a brand's variants. */
+function variantPicker(p) {
+  const fam = familyOf(p);
+  const vs = fam ? familyVariants(fam) : [];
+  if (vs.length < 2) return '';
+  const regions = [...new Set(vs.map(regionOf))], reg = regionOf(p);
+  const shown = (regions.length > 1 ? vs.filter(v => regionOf(v) === reg) : vs).sort((a, b) => a.price - b.price);
+  const closest = r => vs.filter(v => regionOf(v) === r).sort((a, b) => Math.abs(a.price - p.price) - Math.abs(b.price - p.price))[0];
+  const group = (key, chips) => `
+    <div class="vgroup"><span class="vlabel" id="vl-${key.replace('.', '-')}">${esc(t(key))}</span>
+      <div class="vchips" role="radiogroup" aria-labelledby="vl-${key.replace('.', '-')}">${chips}</div></div>`;
+  const chip = (target, on, inner) =>
+    `<a class="vchip" href="#/product/${target.id}" role="radio" aria-checked="${on}" data-variant>${inner}</a>`;
+  return `<div class="variants">
+    ${regions.length > 1 ? group('pdp.region', regions.map(r => chip(closest(r), r === reg, esc(t('region.' + r)))).join('')) : ''}
+    ${group(p.cat === 'cards' ? 'pdp.value' : 'pdp.amount',
+            shown.map(v => chip(v, v.id === p.id, `<b dir="auto">${esc(valueOf(v))}</b><small>${tnd(v.price)}</small>`)).join(''))}
+  </div>`;
 }
 
 const product = {
@@ -402,12 +446,16 @@ const product = {
   render(ctx) {
     const p = byId[ctx.params[0]];
     if (!p) return notFound.render();
-    const related = [...PRODUCTS.filter(x => x.sub === p.sub && x.id !== p.id),
-                     ...PRODUCTS.filter(x => x.cat === p.cat && x.sub !== p.sub)].slice(0, 5);
+    const fam = familyOf(p);
+    // a brand page suggests other brands; anything else suggests its neighbours
+    const related = fam
+      ? [...new Set(PRODUCTS.filter(x => x.cat === p.cat && x.sub !== fam).map(x => x.sub))].slice(0, 5)
+      : [...PRODUCTS.filter(x => x.sub === p.sub && x.id !== p.id),
+         ...PRODUCTS.filter(x => x.cat === p.cat && x.sub !== p.sub)].slice(0, 5);
     const type = deliveryType(p);
     return `
       <div class="page">
-        ${crumbs([[t('home'), '#/'], [catLabel(p.cat), `#/shop/${p.cat}`], [subLabel(p.sub), `#/shop/${p.cat}/${p.sub}`], [p.short, '']])}
+        ${crumbs([[t('home'), '#/'], [catLabel(p.cat), `#/shop/${p.cat}`], ...(fam ? [] : [[subLabel(p.sub), `#/shop/${p.cat}/${p.sub}`]]), [p.short, '']])}
         <div class="pdp">
           ${media(p, 'pdp-art', { adapt: true, eager: true, alt: p.short })}
           <div class="pdp-info">
@@ -415,9 +463,10 @@ const product = {
             <h1>${esc(p.short)}</h1>
             <p class="listing">${esc(p.name)}</p>
             <p class="pdp-blurb">${esc(blurb(p))}</p>
+            ${variantPicker(p)}
             <div class="price-line"><span class="now">${tnd(p.price)}</span><span class="note">${esc(t('pdp.tax'))}</span></div>
             <ul class="facts">
-              <li>${ICON.bolt}<span>${esc(t('dlv.' + type))}</span></li>
+              <li>${ICON.bolt}<span>${esc(dlvText(p))}</span></li>
               <li>${ICON.shield}<span>${esc(p.specs.map(word).join(' · '))}</span></li>
             </ul>
             <div class="pdp-buy">
@@ -447,14 +496,18 @@ const product = {
             <div><dt>${esc(t('spec.platform'))}</dt><dd>${esc(word(p.tags[0]))}</dd></div>
             <div><dt>${esc(t('spec.type'))}</dt><dd>${esc(word(p.tags[1] || '—'))}</dd></div>
             <div><dt>${esc(t('spec.includes'))}</dt><dd>${esc(p.specs.map(word).join(' · '))}</dd></div>
-            <div><dt>${esc(t('spec.delivery'))}</dt><dd>${esc(t('dlv.' + type))}</dd></div>
+            ${fam && familyVariants(fam).length > 1 ? `<div><dt>${esc(t('pdp.region'))}</dt><dd>${esc(t('region.' + regionOf(p)))}</dd></div>` : ''}
+            <div><dt>${esc(t('spec.delivery'))}</dt><dd>${esc(dlvText(p))}</dd></div>
             <div><dt>${esc(t('spec.price'))}</dt><dd>${esc(t('spec.priceTax', { price: tnd(p.price) }))}</dd></div>
           </dl>
         </section>
 
         <section class="block">
-          <div class="block-head"><h2>${esc(t('pdp.related'))}</h2><a class="see-all" href="#/shop/${p.cat}/${p.sub}">${esc(t('pdp.moreIn', { cat: subLabel(p.sub) }))}</a></div>
-          <div class="grid-tiles">${related.map(tile).join('')}</div>
+          ${fam
+            ? `<div class="block-head"><h2>${esc(t('pdp.otherBrands'))}</h2><a class="see-all" href="#/shop/${p.cat}">${esc(t('pdp.moreIn', { cat: catLabel(p.cat) }))}</a></div>
+               <div class="grid-tiles">${related.map(familyTile).join('')}</div>`
+            : `<div class="block-head"><h2>${esc(t('pdp.related'))}</h2><a class="see-all" href="#/shop/${p.cat}/${p.sub}">${esc(t('pdp.moreIn', { cat: subLabel(p.sub) }))}</a></div>
+               <div class="grid-tiles">${related.map(tile).join('')}</div>`}
         </section>
       </div>`;
   },
@@ -469,6 +522,11 @@ const product = {
     $('#qtyUp', el).addEventListener('click', () => set(qty + 1));
     $('#pdpAdd', el).addEventListener('click', () => addToCart(p.id, qty, $('.pdp-art .m-fg', el)));
     $('#pdpBuy', el).addEventListener('click', () => { addToCart(p.id, qty); go('#/checkout'); });
+    // switching value or region replaces the page in history instead of stacking it
+    $$('[data-variant]', el).forEach(a => a.addEventListener('click', e => {
+      e.preventDefault();
+      if (a.getAttribute('aria-checked') !== 'true') location.replace(a.getAttribute('href'));
+    }));
   }
 };
 
@@ -501,6 +559,68 @@ const wishlist = {
 /* ══════════════════════════════════════════════════════════════════════
    Checkout
    ══════════════════════════════════════════════════════════════════════ */
+/* Top-ups in the basket, one block per game (mobile) or per product (others):
+   each game asks for what its publisher needs — a player ID, or the game login. */
+function topupGroups(ids) {
+  const groups = new Map();
+  for (const id of ids) {
+    const p = byId[id];
+    if (deliveryType(p) !== 'topup') continue;
+    const key = p.cat === 'mobile' ? p.sub : p.id;
+    if (!groups.has(key)) groups.set(key, { key, method: topupMethod(p), name: p.cat === 'mobile' ? subLabel(p.sub) : p.short, p });
+  }
+  return [...groups.values()];
+}
+
+const accountRules = {
+  email: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) || t('err.gemail'),
+  password: v => v.length >= 4 || t('err.gpass'),
+  uid: v => /^\d[\d\s]{4,19}$/.test(v.trim()) || t('err.uid'),
+  pid: v => /^\d[\d\s]{5,15}$/.test(v.trim()) || t('err.player')
+};
+
+function gameBlock({ key, method, name, p }) {
+  const saved = state.profile.games?.[key] || {};
+  const n = k => `g_${key}_${k}`;
+  const login = method !== 'id';
+  const remembered = login ? saved.email : saved.playerId;
+  return `
+    <fieldset class="game-acc" data-key="${esc(key)}" data-method="${method}">
+      <legend class="ga-head">
+        ${media(p, 'thumb')}
+        <span class="txt"><b>${esc(name)}</b><span>${esc(t(login ? 'acc.loginD' : 'acc.idD'))}</span></span>
+      </legend>
+      ${remembered ? `<p class="ga-saved">${ICON.check}<span>${esc(t('co.remembered'))}</span></p>` : ''}
+      ${login ? `
+        <div class="field-row">
+          ${field(n('email'), t('acc.email'), saved.email || '', 'email', 'autocomplete="off" dir="ltr"')}
+          <div class="field">
+            <label for="${n('password')}">${esc(t('acc.password'))}</label>
+            <div class="pw-wrap">
+              <input id="${n('password')}" name="${n('password')}" type="password" autocomplete="new-password" dir="ltr">
+              <button type="button" class="pw-toggle" data-pw="${n('password')}" aria-label="${esc(t('acc.show'))}" aria-pressed="false">${ICON.eye}</button>
+            </div>
+            <span class="msg" aria-live="polite"></span>
+          </div>
+        </div>
+        ${method === 'loginFull' ? `
+        <div class="field-row">
+          ${field(n('uid'), t('acc.uid'), saved.uid || '', 'text', `inputmode="numeric" dir="ltr" placeholder="${esc(t('acc.uidPh'))}"`)}
+          <div class="field">
+            <span class="label" id="${n('plat')}-l">${esc(t('acc.platform'))}</span>
+            <div class="seg seg-plat" role="radiogroup" aria-labelledby="${n('plat')}-l">
+              ${['android', 'ios'].map(pl => `<label><input type="radio" name="${n('platform')}" value="${pl}" ${saved.platform === pl ? 'checked' : ''}><span>${esc(t('acc.' + pl))}</span></label>`).join('')}
+            </div>
+            <span class="msg" aria-live="polite"></span>
+          </div>
+        </div>` : ''}
+        <p class="ga-note">${ICON.lock}<span>${esc(t('acc.never'))}</span></p>`
+      : field(n('pid'), t('co.player'), saved.playerId || '', 'text', `inputmode="numeric" dir="ltr" placeholder="${esc(t('co.playerPh'))}"`)}
+    </fieldset>`;
+}
+
+const contactOk = pr => pr.name?.trim().length >= 2 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pr.email || '') && (pr.phone || '').replace(/\D/g, '').length >= 8;
+
 const checkout = {
   title: () => t('co.title'),
   rerenderOn: ['cart'],
@@ -509,30 +629,46 @@ const checkout = {
     const trail = [[t('home'), '#/'], [t('co.title'), '']];
     if (!ids.length) return `<div class="page">${pageHead(t('co.title'), '', trail)}
       ${emptyState(ICON.cartBig, t('co.emptyT'), esc(t('co.emptyD')), `<a class="btn btn-solid" href="#/shop">${esc(t('shop.browse'))}</a>`)}</div>`;
-    const needsId = ids.some(id => deliveryType(byId[id]) === 'topup');
+    const games = topupGroups(ids);
     const pr = state.profile;
+    const filled = contactOk(pr);
+    let step = 1;
     return `
       <div class="page">
         ${pageHead(t('co.title'), `${plural('items', cartQty())} · ${esc(t('co.digital'))}`, trail)}
         <p class="demo-note">${ICON.shield}<span>${esc(t('co.demo'))}</span></p>
         <div class="checkout">
           <form class="card form" id="checkoutForm" novalidate>
-            <h2><span class="step-n">1</span> ${esc(t('co.contact'))}</h2>
+            <h2><span class="step-n">${step++}</span> ${esc(t('co.contact'))}</h2>
             <p class="hint">${esc(t('co.contactD'))}</p>
-            <div class="field-row">
-              ${field('name', t('co.name'), pr.name, 'text', 'autocomplete="name"')}
-              ${field('email', t('co.email'), pr.email, 'email', 'autocomplete="email" dir="ltr"')}
+            <div class="contact-card" id="contactCard" ${filled ? '' : 'hidden'}>
+              <img src="${avatarSrc(pr.avatar)}" alt="" width="44" height="44">
+              <div class="txt">
+                <span class="cc-from">${ICON.check} ${esc(t('co.fromAccount'))}</span>
+                <b>${esc(pr.name)}</b>
+                <span dir="ltr">${esc(pr.email)}</span>
+                <span dir="ltr">${esc(pr.phone)}</span>
+              </div>
+              <button type="button" class="btn btn-ghost btn-sm" id="editContact">${esc(t('co.edit'))}</button>
             </div>
-            ${field('phone', t('co.phone'), pr.phone, 'tel', 'autocomplete="tel" dir="ltr"')}
-            ${needsId ? `<h2><span class="step-n">2</span> ${esc(t('co.player'))}</h2>
-              <p class="hint">${esc(t('co.playerD'))}</p>
-              ${field('playerId', t('co.player'), '', 'text', `inputmode="numeric" dir="ltr" placeholder="${esc(t('co.playerPh'))}"`)}` : ''}
-            <h2><span class="step-n">${needsId ? 3 : 2}</span> ${esc(t('co.payment'))}</h2>
+            <div id="contactFields" ${filled ? 'hidden' : ''}>
+              <div class="field-row">
+                ${field('name', t('co.name'), pr.name, 'text', 'autocomplete="name"')}
+                ${field('email', t('co.email'), pr.email, 'email', 'autocomplete="email" dir="ltr"')}
+              </div>
+              ${field('phone', t('co.phone'), pr.phone, 'tel', 'autocomplete="tel" dir="ltr"')}
+              <label class="check"><input type="checkbox" id="saveContact"><span>${esc(t('co.saveToAccount'))}</span></label>
+            </div>
+            ${games.length ? `<h2><span class="step-n">${step++}</span> ${esc(t('co.games'))}</h2>
+              <p class="hint">${esc(t('co.gamesD'))}</p>
+              ${games.map(gameBlock).join('')}` : ''}
+            <h2><span class="step-n">${step++}</span> ${esc(t('co.payment'))}</h2>
             <div class="pay-options" role="radiogroup" aria-label="${esc(t('co.paymentLabel'))}">
               ${PAYMENT_METHODS.map((m, i) => `
-                <label class="pay-option">
+                <label class="pay-option${m === 'clictopay' ? ' pay-main' : ''}">
                   <input type="radio" name="payment" value="${m}" ${i === 0 ? 'checked' : ''}>
                   <span><b>${esc(t('pay.' + m))}</b><small>${esc(t('pay.' + m + 'D'))}</small></span>
+                  ${m === 'clictopay' ? `<span class="pay-brands" aria-hidden="true"><i>VISA</i><i>MC</i><i>CIB</i><i>e-DINAR</i></span>` : ''}
                 </label>`).join('')}
             </div>
             <label class="check"><input type="checkbox" id="terms"><span>${esc(t('co.terms'))}</span></label>
@@ -560,47 +696,102 @@ const checkout = {
             <div class="sum-row total-row"><span>${esc(t('co.total'))}</span><b>${tnd(cartTotal())}</b></div>
           </aside>
         </div>
+        <div class="redirect" id="redirect" hidden role="status">
+          <div class="card"><i class="spinner"></i><b>${esc(t('co.redirect'))}</b><small>${esc(t('co.redirectD'))}</small></div>
+        </div>
       </div>`;
   },
   mount(el) {
     const form = $('#checkoutForm', el);
     if (!form) return;
+    let timer = null;
     el.addEventListener('click', e => {
       const inc = e.target.closest('[data-inc]'), dec = e.target.closest('[data-dec]');
       if (inc) setQty(inc.dataset.inc, state.cart[inc.dataset.inc] + 1);
       if (dec) setQty(dec.dataset.dec, state.cart[dec.dataset.dec] - 1);
+      const pw = e.target.closest('[data-pw]');
+      if (pw) {
+        const input = form.elements[pw.dataset.pw], show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        pw.innerHTML = show ? ICON.eyeOff : ICON.eye;
+        pw.setAttribute('aria-pressed', String(show));
+        pw.setAttribute('aria-label', t(show ? 'acc.hide' : 'acc.show'));
+      }
     });
+    const openContact = () => {
+      $('#contactCard', el).hidden = true;
+      $('#contactFields', el).hidden = false;
+    };
+    $('#editContact', el).addEventListener('click', () => { openContact(); form.elements.name.focus(); });
+
+    const setMsg = (input, res) => {
+      const box = input.closest('.field');
+      box.classList.toggle('err', res !== true);
+      box.querySelector('.msg').textContent = res === true ? '' : res;
+      return res === true;
+    };
     form.addEventListener('submit', e => {
       e.preventDefault();
-      const rules = {
+      let first = null;
+      const flag = (input, res) => { if (!setMsg(input, res) && !first) first = input; };
+
+      const contact = {
         name: v => v.trim().length >= 2 || t('err.name'),
         email: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) || t('err.email'),
-        phone: v => v.replace(/\D/g, '').length >= 8 || t('err.phone'),
-        playerId: v => /^\d[\d\s]{5,15}$/.test(v.trim()) || t('err.player')
+        phone: v => v.replace(/\D/g, '').length >= 8 || t('err.phone')
       };
-      let first = null;
-      for (const [name, check] of Object.entries(rules)) {
-        const input = form.elements[name];
-        if (!input) continue;
-        const res = check(input.value);
-        const box = input.closest('.field');
-        box.classList.toggle('err', res !== true);
-        box.querySelector('.msg').textContent = res === true ? '' : res;
-        if (res !== true && !first) first = input;
+      for (const [name, check] of Object.entries(contact)) {
+        const input = form.elements[name], res = check(input.value);
+        if (res !== true) openContact();
+        flag(input, res);
       }
+
+      const accounts = {};
+      for (const fs of $$('.game-acc', form)) {
+        const { key, method } = fs.dataset, n = k => form.elements[`g_${key}_${k}`];
+        if (method === 'id') {
+          flag(n('pid'), accountRules.pid(n('pid').value));
+          accounts[key] = { method, playerId: n('pid').value.trim() };
+          continue;
+        }
+        flag(n('email'), accountRules.email(n('email').value));
+        flag(n('password'), accountRules.password(n('password').value));
+        accounts[key] = { method, email: n('email').value.trim(), password: n('password').value };
+        if (method === 'loginFull') {
+          flag(n('uid'), accountRules.uid(n('uid').value));
+          const plat = $(`input[name="g_${key}_platform"]:checked`, fs);
+          const radio = $(`input[name="g_${key}_platform"]`, fs);
+          setMsg(radio, plat ? true : t('err.platform'));
+          if (!plat && !first) first = radio;
+          Object.assign(accounts[key], { uid: n('uid').value.trim(), platform: plat?.value });
+        }
+      }
+
       const terms = $('#terms', form);
       $('#termsMsg', form).textContent = terms.checked ? '' : t('err.terms');
       if (!terms.checked && !first) first = terms;
       if (first) { first.focus(); return; }
-      const order = placeOrder({
-        name: form.elements.name.value.trim(),
-        email: form.elements.email.value.trim(),
-        phone: form.elements.phone.value.trim(),
-        payment: form.elements.payment.value,
-        playerId: form.elements.playerId?.value.trim()
-      });
-      go(`#/order/${order.id}?new=1`);
+
+      const details = { name: form.elements.name.value.trim(), email: form.elements.email.value.trim(), phone: form.elements.phone.value.trim() };
+      if ($('#saveContact', form).checked) saveProfile(details);
+      // remember the non-secret game details (never the password) for next time
+      const games = { ...(state.profile.games || {}) };
+      for (const [key, { password, method, ...rest }] of Object.entries(accounts)) games[key] = rest;
+      saveProfile({ games });
+
+      const finish = () => {
+        const order = placeOrder({ ...details, payment: form.elements.payment.value, accounts });
+        go(`#/order/${order.id}?new=1`);
+      };
+      if (form.elements.payment.value !== 'clictopay') return finish();
+      // stands in for the bank's payment page; moved to <body> so the page's
+      // entrance transform and the glass panel's blur can't trap it
+      const rd = $('#redirect', el);
+      document.body.append(rd);
+      rd.hidden = false;
+      timer = setTimeout(() => { rd.remove(); finish(); }, 1400);
     });
+    return () => { clearTimeout(timer); document.querySelector('body > #redirect')?.remove(); };
   }
 };
 
@@ -647,6 +838,8 @@ const order = {
             <div class="sum-row"><span>${esc(t('ord.payment'))}</span><span>${esc(payLabel(o.payment))}</span></div>
             <div class="sum-row"><span>${esc(t('ord.to'))}</span><span dir="ltr">${esc(email)}</span></div>
             ${o.playerId ? `<div class="sum-row"><span>${esc(t('ord.player'))}</span><span dir="ltr">${esc(o.playerId)}</span></div>` : ''}
+            ${Object.entries(o.accounts || {}).map(([key, a]) => `<div class="sum-row"><span>${esc(byId[key]?.short || subLabel(key))}</span>
+              <span dir="ltr">${esc(a.email ? [a.email, a.uid && 'UID ' + a.uid, a.platform && t('acc.' + a.platform)].filter(Boolean).join(' · ') : a.playerId)}</span></div>`).join('')}
             <div class="sum-row total-row"><span>${esc(t('co.total'))}</span><b>${tnd(orderTotal(o))}</b></div>
             <a class="btn btn-ghost btn-wide" href="#/support">${esc(t('ord.help'))}</a>
           </aside>

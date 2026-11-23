@@ -8,7 +8,7 @@ import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js'
 import {
   $, $$, byId, tnd, esc, avatarSrc, go, ICON, state, on,
   cartQty, cartTotal, setQty, addToCart, toggleWish, unreadCount, markRead, noteText,
-  applyPrefs, searchProducts, media, fitAll, toast, catLabel, subLabel, subsOf
+  applyPrefs, searchProducts, media, fitAll, toast, catLabel, subLabel, subsOf, familyLead, FAMILY_CATS
 } from './core.js';
 import { VIEWS } from './views.js';
 
@@ -141,7 +141,7 @@ function openMega(tab) {
   clearTimeout(megaTimer);
   mega.innerHTML = `
     <a class="mega-all" href="#/shop/${cat}">${esc(t('shop.allIn', { cat: catLabel(cat) }))} ${ICON.chev}</a>
-    <div class="mega-grid">${subs.map(id => `<a href="#/shop/${cat}/${id}">${esc(subLabel(id))}</a>`).join('')}</div>`;
+    <div class="mega-grid">${subs.map(id => `<a href="${FAMILY_CATS.includes(cat) && familyLead(id) ? `#/product/${familyLead(id).id}` : `#/shop/${cat}/${id}`}">${esc(subLabel(id))}</a>`).join('')}</div>`;
   mega.dataset.cat = cat;
   mega.hidden = false;
   const tr = tab.getBoundingClientRect(), pr = mega.offsetParent.getBoundingClientRect();

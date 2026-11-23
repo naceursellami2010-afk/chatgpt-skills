@@ -2297,3 +2297,101 @@ html[lang='ar'] .cred-label, html[lang='ar'] .pop h4 { text-transform: none; fon
 .shop > *, .settings > *, .checkout > *, .order-layout > *, .support-layout > *, .pdp > * { min-width: 0; }
 
 .view, .topbar { min-width: 0; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   15. Brand variants, game accounts, contact card, ClicToPay
+   ══════════════════════════════════════════════════════════════════════ */
+/* region / value chips on a brand's product page */
+.variants { display: flex; flex-direction: column; gap: 14px; margin: 4px 0 2px; }
+.vgroup { display: flex; flex-direction: column; gap: 8px; }
+.vlabel { font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-50); }
+.vchips { display: flex; flex-wrap: wrap; gap: 8px; }
+.vchip {
+  display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  min-height: 44px; padding: 10px 16px; justify-content: center;
+  border-radius: 14px;
+  background: rgba(10, 12, 18, .3);
+  border: 1px solid var(--edge-soft);
+  color: #fff; font-size: 15px; font-weight: 500; text-decoration: none;
+  transition: background var(--fast) var(--swift), border-color var(--fast) var(--swift), transform var(--fast) var(--swift);
+}
+.vchip b { font-weight: 600; font-size: 15px; }
+.vchip small { font-size: 13px; color: var(--ink-50); font-variant-numeric: tabular-nums; }
+.vchip:hover { background: rgba(10, 12, 18, .46); border-color: var(--edge); }
+.vchip:active { transform: scale(.97); }
+.vchip[aria-checked='true'] { background: #fff; color: var(--on-light); border-color: #fff; }
+.vchip[aria-checked='true'] small { color: var(--on-light); opacity: .72; }
+.vchip:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+html[lang='ar'] .vlabel { text-transform: none; font-size: 13.5px; }
+
+/* a brand tile opens its page rather than adding one variant */
+.tile-family .round svg { width: 16px; height: 16px; }
+
+/* one block per game in the basket */
+.game-acc {
+  margin: 0; padding: 16px; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+  border-radius: 16px;
+  background: rgba(10, 12, 18, .22);
+  border: 1px solid var(--edge-soft);
+}
+.ga-head { display: flex; align-items: center; gap: 12px; padding: 0; float: left; width: 100%; }
+.ga-head + * { clear: both; }
+.ga-head .thumb { width: 44px; height: 44px; border-radius: 10px; flex: none; }
+.ga-head .txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ga-head b { font-size: 15px; font-weight: 600; }
+.ga-head .txt span { font-size: 13px; color: var(--ink-50); }
+.ga-saved, .ga-note { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; color: var(--ink-50); }
+.ga-saved svg { color: var(--success); width: 14px; height: 14px; flex: none; }
+.ga-note svg { color: var(--teal-ink); width: 15px; height: 15px; flex: none; }
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-inline-end: 48px; }
+.pw-toggle {
+  position: absolute; inset-block: 4px; inset-inline-end: 4px; width: 40px;
+  display: grid; place-items: center; border-radius: 9px; color: var(--ink-70);
+}
+.pw-toggle:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.pw-toggle:focus-visible { outline: 2px solid #fff; outline-offset: 0; }
+.field .label { font-size: 13px; font-weight: 500; color: var(--ink-70); }
+.seg-plat span { min-width: 92px; text-align: center; padding: 11px 18px; }
+.field.err .seg-plat { box-shadow: 0 0 0 1px rgba(255, 120, 120, .7); }
+
+/* contact details pulled from the account */
+.contact-card {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--teal) 10%, rgba(10, 12, 18, .26));
+  border: 1px solid color-mix(in srgb, var(--teal) 40%, transparent);
+}
+.contact-card[hidden], #contactFields[hidden] { display: none; }
+#contactFields { display: flex; flex-direction: column; gap: 14px; }
+.contact-card img { width: 44px; height: 44px; border-radius: 50%; flex: none; object-fit: cover; }
+.contact-card .txt { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; font-size: 14px; color: var(--ink-70); }
+.contact-card .txt span[dir] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[dir='rtl'] .contact-card .txt span[dir] { text-align: end; }
+.contact-card b { font-size: 15px; color: #fff; }
+.cc-from { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--teal-ink); }
+.cc-from svg { width: 12px; height: 12px; }
+.btn-sm { height: 36px; padding: 0 14px; font-size: 14px; }
+
+/* ClicToPay: the card networks it takes */
+.pay-option > span:not(.pay-brands) { flex: 1; min-width: 0; }
+.pay-brands { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.pay-brands i {
+  font-style: normal; font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  padding: 3px 7px; border-radius: 6px; background: #fff; color: var(--on-light);
+}
+
+/* stands in for the bank's payment page */
+.redirect { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: rgba(8, 10, 16, .66); }
+.redirect .card { background: var(--surface-solid); }
+.redirect[hidden] { display: none; }
+.redirect .card { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 28px 32px; text-align: center; max-width: min(360px, calc(100vw - 32px)); }
+.redirect .spinner { width: 28px; height: 28px; border-width: 3px; }
+.redirect b { font-size: 17px; }
+.redirect small { font-size: 13px; color: var(--ink-50); }
+
+@media (max-width: 600px) {
+  .contact-card { flex-wrap: wrap; }
+  .pay-brands { display: none; }
+}

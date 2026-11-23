@@ -1,13 +1,43 @@
 /* TechGarage demo — shared state, store actions and UI primitives.
    Everything a page needs lives here so the views stay declarative. */
 
-import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS } from './data.js';
-import { t, price, date, word, blurb } from './i18n.js';
+import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, TOPUP_METHOD } from './data.js';
+import { t, plural, price, date, word, blurb } from './i18n.js';
 
 /* ── helpers ───────────────────────────────────────────────────────── */
 export const $  = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 export const byId = Object.fromEntries(PRODUCTS.map(p => [p.id, p]));
+
+/* ── brand families ────────────────────────────────────────────────────
+   Gift cards and mobile games are browsed one brand at a time: the shop
+   shows one tile per brand, and the product page switches region and
+   value inside it. Region and value are read from the store's own titles. */
+export const FAMILY_CATS = ['cards', 'mobile'];
+export const familyOf = p => (p && FAMILY_CATS.includes(p.cat) ? p.sub : null);
+export const familyVariants = fam => PRODUCTS.filter(p => familyOf(p) === fam);
+export const familyLead = fam => familyVariants(fam)[0];
+
+const REGION_RULES = [[/\(FR\)|FRANCE/i, 'FR'], [/UNITED STATES|\(US\)|USA/i, 'US'], [/TURKEY|\(TR\)/i, 'TR'],
+                      [/INDIA/i, 'IN'], [/EUROPE|EURO\b|€/i, 'EU']];
+export const regionOf = p => (REGION_RULES.find(([re]) => re.test(p.name + ' ' + p.short)) || [, 'GL'])[1];
+
+const prefixCache = {};
+function familyPrefix(fam) {
+  if (fam in prefixCache) return prefixCache[fam];
+  const names = familyVariants(fam).map(p => p.short);
+  let pre = names[0] || '';
+  for (const n of names) while (!n.startsWith(pre)) pre = pre.slice(0, -1);
+  if (names.length < 2) pre = SUB_NAMES[fam] && names[0]?.startsWith(SUB_NAMES[fam]) ? SUB_NAMES[fam] : '';
+  return (prefixCache[fam] = pre.slice(0, pre.lastIndexOf(' ') + 1));
+}
+/** "Steam Wallet 20 EUR (FR)" → "20 EUR"; "Fortnite Crew · 2 months" → "Crew · 2 months". */
+export const valueOf = p => {
+  const fam = familyOf(p);
+  let v = fam ? p.short.slice(familyPrefix(fam).length) : p.short;
+  v = v.replace(/\s*\((?:FR|US|TR|EU|IN)\)\s*$/, '').replace(/^[·\s]+/, '').trim();
+  return v || p.short;
+};
 
 export const tnd = price;
 export const fmtDate = date;
@@ -19,7 +49,7 @@ export const catLabel = id => id && CATEGORIES.some(c => c.id === id) ? t('cat.'
 export const subLabel = id => SUB_NAMES[id] || t('sub.' + id);
 export const subsOf = cat => (CATEGORIES.find(c => c.id === cat) || {}).subs || [];
 export const avatarSrc = name => `assets/avatars/${name}.png`;
-export const payLabel = id => t('pay.' + id);
+export const payLabel = id => t('pay.' + (id === 'card' ? 'clictopay' : id));   // 'card' = orders saved before ClicToPay
 
 /** Navigate; re-runs the route when the hash is already current. */
 export function go(hash) {
@@ -204,7 +234,12 @@ export const getOrder  = id => allOrders().find(o => o.id === id);
 export const orderTotal = o => o.items.reduce((s, [id, q]) => s + byId[id].price * q, 0);
 export const orderCount = o => o.items.reduce((s, [, q]) => s + q, 0);
 
-export function placeOrder({ name, email, phone, payment, playerId }) {
+/** Game account details for one order. Passwords are dropped here — they
+    are used for the top-up and never written to storage. */
+const stripSecrets = accounts => accounts && Object.fromEntries(Object.entries(accounts)
+  .map(([sub, { password, ...rest }]) => [sub, rest]));
+
+export function placeOrder({ name, email, phone, payment, accounts }) {
   const next = 1043 + state.orders.length;
   const order = {
     id: `TG-${next}`,
@@ -212,7 +247,7 @@ export function placeOrder({ name, email, phone, payment, playerId }) {
     items: Object.entries(state.cart),
     status: 'processing',
     deliverAt: Date.now() + DELIVERY_DELAY,
-    payment, playerId: playerId || undefined,
+    payment, accounts: stripSecrets(accounts),
     contact: { name, email, phone }
   };
   state.orders.unshift(order);
@@ -223,6 +258,9 @@ export function placeOrder({ name, email, phone, payment, playerId }) {
 }
 
 /* ── delivery: what the shopper receives, and a demo credential for it ── */
+/** How a top-up reaches the game: 'loginFull' | 'login' | 'id' (see TOPUP_METHOD). */
+export const topupMethod = p => (p.cat === 'mobile' && TOPUP_METHOD[p.sub]) || 'id';
+
 export function deliveryType(p) {
   if (p.cat === 'mobile' || p.sub === 'topups' || p.sub === 'apps') return 'topup';
   if (p.cat === 'cards') return 'code';
@@ -249,7 +287,11 @@ export function credential(order, id) {
     case 'account':
       return { label: t('cred.account'), login: `tg.${block(rand, 6).toLowerCase()}@example.com`, secret: `DEMO-${block(rand, 10)}` };
     case 'topup':
-      return { label: t('cred.topup'), note: t('cred.credited', { id: order.playerId || '—' }) };
+    {
+      const a = order.accounts?.[p.sub] || order.accounts?.[p.id] || {};
+      return { label: t('cred.topup'), note: a.email ? t('cred.loginCredited', { email: a.email })
+                                                     : t('cred.credited', { id: a.playerId || order.playerId || '—' }) };
+    }
     case 'code':
       return { label: t('cred.code'), secret: 'DEMO-' + [4, 4, 4, 4].map(n => block(rand, n)).join('-') };
     default:
@@ -358,6 +400,25 @@ export const tile = (p, i = 0) => `
       <button class="round" data-add="${p.id}" aria-label="${esc(t('buy.addNamed', { name: p.short }))}">${ICON.plus}</button>
     </div>
   </article>`;
+
+/** One tile for a whole brand: lead photo, "From 40 DT", number of options. */
+export const familyTile = (fam, i = 0) => {
+  const vs = familyVariants(fam), p = vs[0], low = Math.min(...vs.map(v => v.price)), name = subLabel(fam);
+  if (vs.length < 2) return tile(p, i);
+  return `
+  <article class="tile tile-family" data-view="${p.id}" style="--d:${Math.min(i, 12) * 45}ms">
+    ${media(p, 'shot')}
+    <span class="tile-tag">${esc(plural('options', vs.length))}</span>
+    <div class="tile-body">
+      <div class="txt">
+        <h3>${esc(name)}</h3>
+        <p>${esc(vs.slice(0, 3).map(valueOf).join(' · '))}${vs.length > 3 ? ' …' : ''}</p>
+        <span class="px">${esc(t('fam.from', { price: tnd(low) }))}</span>
+      </div>
+      <button class="round" data-view="${p.id}" aria-label="${esc(t('fam.open', { name }))}">${ICON.chev}</button>
+    </div>
+  </article>`;
+};
 
 /* ── feedback ──────────────────────────────────────────────────────── */
 export function toast(msg, ok = false) {
