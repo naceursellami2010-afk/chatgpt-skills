@@ -36,6 +36,16 @@ def parse_frontmatter(skill_md: Path):
     return mapping
 
 
+def catalog_entries(doc: Path):
+    """Return skill names listed as `- `name`` bullets in a doc's catalog section."""
+    content = doc.read_text(encoding="utf-8")
+    if "<!-- SKILL-LIST:START -->" in content:
+        content = content.split("<!-- SKILL-LIST:START -->", 1)[1].split("<!-- SKILL-LIST:END -->", 1)[0]
+    else:
+        content = content.split("## Catalog", 1)[1].split("\n## ", 1)[0]
+    return set(re.findall(r"^- `([a-z0-9-]+)`\s*$", content, re.MULTILINE))
+
+
 class SkillStructureTests(unittest.TestCase):
     def test_all_skill_dirs_have_skill_md(self):
         missing = [d.name for d in list_candidate_skills() if not (d / "SKILL.md").exists()]
@@ -68,6 +78,23 @@ class SkillStructureTests(unittest.TestCase):
                 errors.append(f"{skill_md} missing 'description' in frontmatter")
 
         self.assertFalse(errors, "Frontmatter issues:\n- " + "\n- ".join(errors))
+
+    def test_skill_dirs_have_openai_yaml(self):
+        missing = [
+            d.name for d in list_candidate_skills() if not (d / "agents" / "openai.yaml").exists()
+        ]
+        self.assertFalse(missing, f"Missing agents/openai.yaml in: {', '.join(sorted(missing))}")
+
+    def test_catalogs_match_skill_dirs(self):
+        skills = {d.name for d in list_candidate_skills()}
+        for doc in ("README.md", "CLAUDE.md"):
+            listed = catalog_entries(ROOT / doc)
+            self.assertEqual(
+                listed,
+                skills,
+                f"{doc} catalog out of sync: missing {sorted(skills - listed)}, "
+                f"extra {sorted(listed - skills)}",
+            )
 
     def test_repository_docs_exist(self):
         for doc in ("README.md", "CLAUDE.md"):

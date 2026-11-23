@@ -5,11 +5,13 @@ This suite sanity-checks the ChatGPT Skills library. Tests are Python `unittest`
 ## What the tests cover
 - Each top-level skill directory (hyphen-case) includes a `SKILL.md` file.
 - `SKILL.md` frontmatter has `name` and `description`, and the `name` is hyphen-case and aligns with the folder name.
+- Each skill directory includes `agents/openai.yaml`.
+- The catalogs in `README.md` and `CLAUDE.md` list exactly the skill directories present.
 - Root docs `README.md` and `CLAUDE.md` exist and are non-empty.
 
 ## Running the tests
 ```bash
-python -m unittest discover tests
+python3 -m unittest discover tests
 ```
 
 Run from the repository root. All tests should pass before publishing new skills or documentation.

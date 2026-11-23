@@ -54,6 +54,3 @@ output/
 .coverage
 htmlcov/
 
-# Skill-specific ignores
-audit_all_skills.py
-verify_docs.py

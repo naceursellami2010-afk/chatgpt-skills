@@ -21,8 +21,7 @@ python3 skill-creator/scripts/generate_openai_yaml.py my-skill \
   --interface short_description="One-line summary" \
   --interface default_prompt="Help me use this skill."
 python3 skill-creator/scripts/quick_validate.py my-skill
-python3 audit_all_skills.py
-python3 verify_docs.py
+python3 -m unittest discover tests
 python3 skill-creator/scripts/package_skill.py my-skill ./dist
 ```
 
@@ -47,4 +46,4 @@ python3 skill-creator/scripts/package_skill.py my-skill ./dist
 
 - The old micro-skill catalog was intentionally pruned.
 - Overlapping image, media, geo, and analytics utilities were merged into broader suites.
-- Repo docs are verified against the actual skill folders with `verify_docs.py`.
+- Repo docs are verified against the actual skill folders by the unittest suite in `tests/`.
