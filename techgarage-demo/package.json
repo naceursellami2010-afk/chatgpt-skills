@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "arena": "^0.0.2",
+    "graphify": "^1.0.0",
     "ponytail": "^1.0.57"
   },
   "private": true
