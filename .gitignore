@@ -57,3 +57,6 @@ htmlcov/
 # Skill-specific ignores
 audit_all_skills.py
 verify_docs.py
+
+# The TechGarage demo ships its generated avatars (see techgarage-demo/scripts)
+!techgarage-demo/assets/avatars/*.png
