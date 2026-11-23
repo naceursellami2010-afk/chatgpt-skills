@@ -2512,3 +2512,159 @@ html[lang='ar'] .adm-card h3 { text-transform: none; font-size: 13.5px; }
   .adm-row .adm-actions { margin-inline-start: auto; }
   .adm-toolbar .select, .adm-toolbar .btn { flex: 1; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   17. Motion
+   Timings follow the reference build: expo-out curves, ~1 s builds,
+   50–80 ms staggers. Everything sits behind html.motion, which motion.js
+   removes when the shopper or their device asks for reduced motion.
+   ══════════════════════════════════════════════════════════════════════ */
+:root {
+  --out-expo: cubic-bezier(.16, 1, .3, 1);
+  --inout-expo: cubic-bezier(.87, 0, .13, 1);
+}
+
+/* --- page to page: cross-fade, shared pictures morph ---------------------- */
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: .36s; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+::view-transition-group(*) { animation-duration: .66s; animation-timing-function: var(--out-expo); }
+.pdp-art { view-transition-name: pdp-art; }
+::view-transition-old(pdp-art), ::view-transition-new(pdp-art) { animation-duration: .5s; }
+
+/* a sort or filter slides every card to its new place */
+.vt-flip .grid-tiles > .tile { view-transition-name: var(--vt); }
+.settled .tile { animation: none; }
+
+/* --- a new page builds itself up ----------------------------------------- */
+.motion .page { animation: none; }
+.motion .intro {
+  animation: lift-in 1s var(--out-expo) both;
+  animation-delay: calc(90ms + var(--i, 0) * 70ms);
+}
+/* text-like pieces also come out of a soft blur (glass cards don't: a filter
+   would switch off their frosted backdrop while it plays) */
+.motion .intro:is(p, nav, .crumbs, .eyebrow, .chip-row, .shop-bar, .chips, .price-line, .listing, .pdp-blurb, .facts, .media) {
+  animation-name: lift-blur;
+}
+@keyframes lift-in { from { opacity: 0; transform: translateY(28px); } }
+@keyframes lift-blur { from { opacity: 0; transform: translateY(24px); filter: blur(6px); } }
+
+/* headings: each word rises out of its own mask */
+.split .w {
+  display: inline-block;
+  overflow: clip;
+  vertical-align: top;
+  padding-block: .08em .14em;
+  margin-block: -.08em -.14em;
+}
+.split .w > span { display: inline-block; }
+.motion .split .w > span {
+  animation: word-rise 1s var(--out-expo) both;
+  animation-delay: calc(110ms + var(--wi, 0) * 55ms);
+}
+@keyframes word-rise { from { transform: translateY(112%); } }
+
+/* further down the page: fade up on arrival */
+.motion .reveal { opacity: 0; transform: translateY(40px); animation: none !important; }
+.motion .reveal.in {
+  opacity: 1; transform: none;
+  transition: opacity .8s var(--out-expo) calc(var(--r, 0) * 70ms), transform 1.1s var(--out-expo) calc(var(--r, 0) * 70ms) !important;
+}
+
+/* --- home carousel: the next slide wipes across, its art settles ---------- */
+.motion .slide {
+  opacity: 1; visibility: hidden; z-index: 0;
+  clip-path: inset(0 0 0 100%);
+  transition: clip-path 1.1s var(--inout-expo), visibility 0s linear 1.1s;
+}
+.motion .slide.on { visibility: visible; z-index: 2; clip-path: inset(0); transition: clip-path 1.1s var(--inout-expo); }
+.motion .slide.was { visibility: visible; z-index: 1; clip-path: inset(0); transition: none; }
+.motion .slide.on .slide-art { animation: art-settle 1.6s var(--out-expo) both; }
+@keyframes art-settle { from { transform: scale(1.16); } }
+.motion .slide .split .w > span { animation: none; }
+.motion .slide.on .split .w > span { animation: word-rise 1s var(--out-expo) both; animation-delay: calc(380ms + var(--wi, 0) * 55ms); }
+.slide-body > :nth-child(1) { --k: 0; } .slide-body > :nth-child(2) { --k: 1; } .slide-body > :nth-child(3) { --k: 2; }
+.slide-body > :nth-child(4) { --k: 3; } .slide-body > :nth-child(5) { --k: 4; } .slide-body > :nth-child(6) { --k: 5; }
+.motion .slide.on .slide-body > :not(h1) { animation: lift-blur .9s var(--out-expo) both; animation-delay: calc(.46s + var(--k, 0) * 70ms); }
+
+/* --- cards lean toward the pointer, with a sheen that follows it ---------- */
+.tile::before {
+  content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none; border-radius: inherit;
+  background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 0%), rgba(255, 255, 255, .22), transparent 45%);
+  mix-blend-mode: overlay; opacity: 0; transition: opacity .45s var(--swift);
+}
+.motion .tile:hover::before { opacity: 1; }
+.motion .tile:hover { transform: translateY(-6px) perspective(900px) rotateX(var(--ry, 0deg)) rotateY(var(--rx, 0deg)); }
+.motion .tile:hover .shot { transform: scale(1.06); }
+
+/* presses give a little */
+.btn, .round, .fchip, .vchip, .adm-ico { transition-property: background, color, border-color, box-shadow, transform, opacity; }
+.motion .btn:active, .motion .round:active, .motion .fchip:active, .motion .tab:active { transform: scale(.96); }
+
+/* --- category header: title, line, chips and three fanned covers --------- */
+.cat-hero {
+  position: relative; isolation: isolate; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 44%); align-items: center; gap: 24px;
+  min-height: 290px; margin: 10px 0 18px; padding: 34px 40px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .11), rgba(255, 255, 255, .03) 60%), rgba(20, 22, 30, .42);
+  border: 1px solid var(--edge-soft);
+  box-shadow: var(--lift-1);
+}
+.cat-hero::before {
+  content: ''; position: absolute; inset: -30% -10% auto auto; width: 70%; height: 160%; z-index: -1;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--teal) 30%, transparent), transparent);
+  opacity: .5; filter: blur(30px);
+}
+.cat-hero-txt { min-width: 0; }
+.eyebrow { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-50); }
+.cat-hero h1 {
+  margin: 10px 0 12px;
+  font-family: var(--display); font-size: clamp(36px, 4.2vw, 60px); font-weight: 700; line-height: 1.02; letter-spacing: -.035em;
+}
+.cat-hero-d { margin: 0 0 20px; max-width: 46ch; font-size: 15px; line-height: 1.5; color: var(--ink-70); }
+.cat-chips .fchip { padding: 8px 14px; }
+
+.cat-covers { position: relative; height: 230px; }
+.cover {
+  position: absolute; top: 50%; left: 50%;
+  width: 164px; aspect-ratio: 3 / 4; border-radius: 18px; overflow: hidden;
+  background: var(--sunken);
+  box-shadow: 0 26px 60px -20px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 255, 255, .09);
+  transform: translate(-50%, -50%)
+             translate(calc(var(--x) + var(--px, 0) * var(--z) * -1px), calc(var(--y) + var(--py, 0) * var(--z) * -1px))
+             rotate(var(--r)) scale(var(--s));
+  transition: transform 1.2s var(--out-expo);
+}
+.cover > .media { position: absolute; inset: 0; }
+.cover-0 { --x: -62%; --y: 5%;  --r: -9deg; --s: .88; --z: 12; z-index: 1; view-transition-name: cover-0; }
+.cover-1 { --x: 62%;  --y: 3%;  --r: 8deg;  --s: .88; --z: 16; z-index: 1; view-transition-name: cover-1; }
+.cover-2 { --x: 0%;   --y: 0%;  --r: -2deg; --s: 1;   --z: 26; z-index: 2; view-transition-name: cover-2; }
+.motion .cat-hero:hover .cover-0 { --x: -72%; --r: -12deg; }
+.motion .cat-hero:hover .cover-1 { --x: 72%; --r: 11deg; }
+.motion .cat-hero:hover .cover-2 { --y: -3%; --s: 1.03; }
+[dir='rtl'] .cover-0 { --x: 62%; --r: 9deg; }
+[dir='rtl'] .cover-1 { --x: -62%; --r: -8deg; }
+[dir='rtl'] .cover-2 { --r: 2deg; }
+
+/* moving between categories, the covers shuffle like a deck */
+::view-transition-old(cover-0), ::view-transition-old(cover-1), ::view-transition-old(cover-2) {
+  animation: cover-out .42s cubic-bezier(.5, 0, .75, 0) both; mix-blend-mode: normal;
+}
+::view-transition-new(cover-0), ::view-transition-new(cover-1), ::view-transition-new(cover-2) {
+  animation: cover-in .9s var(--out-expo) both; mix-blend-mode: normal;
+}
+::view-transition-new(cover-1) { animation-delay: .07s; }
+::view-transition-new(cover-2) { animation-delay: .14s; }
+@keyframes cover-out { to { opacity: 0; transform: translateY(-14%) rotate(-7deg) scale(.92); } }
+@keyframes cover-in { from { opacity: 0; transform: translateY(24%) rotate(9deg) scale(.9); } }
+
+.shop-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.shop-bar p { margin: 0; font-size: 14px; color: var(--ink-70); }
+
+@media (max-width: 760px) {
+  .cat-hero { grid-template-columns: minmax(0, 1fr); padding: 24px 20px 10px; gap: 6px; min-height: 0; border-radius: 22px; }
+  .cat-covers { height: 180px; }
+  .cover { width: 112px; }
+}
+html[lang='ar'] .eyebrow { letter-spacing: 0; text-transform: none; font-size: 13px; }

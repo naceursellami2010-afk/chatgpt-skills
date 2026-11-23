@@ -4,13 +4,13 @@
    (see applyAdmin in data.js), saved with commitAdmin(), which re-indexes
    the catalogue and redraws the store — no reload, no server. */
 
-import { PRODUCTS, CATEGORIES, SUB_NAMES, HERO, NEW_DROPS, CAT_NAMES, PAGE_SECTIONS, ADMIN_KEY, loadAdmin, shipped } from './data.js?v=20261124a';
-import { LANGS, t, tIn, plural } from './i18n.js?v=20261124a';
+import { PRODUCTS, CATEGORIES, SUB_NAMES, HERO, NEW_DROPS, CAT_NAMES, PAGE_SECTIONS, ADMIN_KEY, loadAdmin, shipped } from './data.js?v=20261124c';
+import { LANGS, t, tIn, plural } from './i18n.js?v=20261124c';
 import {
   $, $$, byId, tnd, esc, catLabel, subLabel, subsOf, go, ICON, media, fitAll, toast, commitAdmin,
   isListed, listed, regionOf, valueOf, deliveryType, topupMethod
-} from './core.js?v=20261124a';
-import { pageHead, field, emptyState, toggle } from './views.js?v=20261124a';
+} from './core.js?v=20261124c';
+import { pageHead, field, emptyState, toggle } from './views.js?v=20261124c';
 
 /* ── the owner's record ────────────────────────────────────────────── */
 const clone = v => JSON.parse(JSON.stringify(v));

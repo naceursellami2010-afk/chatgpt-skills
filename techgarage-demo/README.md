@@ -148,6 +148,31 @@ them (`localStorage`, key `tg.admin`) and laid over the shipped catalogue by `ap
 in `data.js`. A real store would save the same record to its backend and put the admin
 behind a login.
 
+## Motion
+
+Modelled on the transitions of the reference build (techgarage-demo.vercel.app — its GSAP
+timings: expo-out curves, ~1 s builds, 50–80 ms staggers), done here with CSS, the View
+Transitions API and an IntersectionObserver, no library (`assets/js/motion.js`):
+
+- **Page to page** — the old page cross-fades into the new one, then the new page builds
+  itself up: big titles rise word by word out of a mask, the rest lifts in from a soft blur,
+  one piece after another.
+- **Category header** — every category and subcategory opens on a glass header with its
+  title, a line about it, category chips and three fanned covers. Moving between
+  categories, the covers shuffle like a deck; they lean with the pointer and spread on hover.
+- **Card → product** — a card's picture grows into the product page's picture, and shrinks
+  back into its card on Back. Switching region or value morphs the picture in place.
+- **Sorting and filtering** — cards slide to their new places.
+- **Home carousel** — the next slide wipes across from the side it comes from, its art
+  settles from a zoom and its text rises in.
+- **Scrolling** — cards and sections further down fade up as they arrive.
+- **Cards** lean toward the pointer with a sheen that follows it; buttons give a little
+  when pressed.
+
+Settings → Appearance → Reduce motion, or the device's own setting, turns all of it off.
+If a device can't start a page transition within 300 ms, the page simply appears — the
+animation never makes anyone wait.
+
 ## Languages
 
 English, French and Arabic, chosen from the globe button in the top bar or in
@@ -222,6 +247,7 @@ assets/css/app.css      all styling
 assets/js/data.js       catalogue, categories and subcategories, account, orders, store details
 assets/js/i18n.js       English, French and Arabic: phrases, plurals, prices, dates, product copy, FAQ
 assets/js/core.js       shared state, store actions, smart photo fit, product card
+assets/js/motion.js     page transitions, word-by-word titles, scroll reveals, card tilt
 assets/js/views.js      every page
 assets/js/admin.js      store admin: categories, products, page sections
 assets/js/app.js        shell, search, basket, router

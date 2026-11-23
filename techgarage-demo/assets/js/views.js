@@ -4,8 +4,8 @@
    the shell, so most markup only needs data-* attributes.
    Every visible word goes through t() / plural() from i18n.js. */
 
-import { PRODUCTS, CATEGORIES, HERO, NEW_DROPS, RECENT, NOTIFICATIONS, STORE, PAYMENT_METHODS, ACCENTS, AVATARS } from './data.js?v=20261124a';
-import { LANGS, t, plural, blurb, word, faq, lang, setLang, isRTL } from './i18n.js?v=20261124a';
+import { PRODUCTS, CATEGORIES, HERO, NEW_DROPS, RECENT, NOTIFICATIONS, STORE, PAYMENT_METHODS, ACCENTS, AVATARS } from './data.js?v=20261124c';
+import { LANGS, t, plural, blurb, word, faq, lang, setLang, isRTL } from './i18n.js?v=20261124c';
 import {
   $, $$, byId, tnd, esc, catLabel, subLabel, subsOf, avatarSrc, payLabel, fmtDate, go, ICON, state,
   cartQty, cartTotal, setQty, addToCart, markViewed, clearViewed, unreadCount, markRead, noteText,
@@ -14,8 +14,9 @@ import {
   deliveryType, credential, searchProducts, media, heartBtn, tile, toast, exportData, resetEverything,
   familyOf, familyVariants, familyLead, familyTile, regionOf, valueOf, topupMethod, FAMILY_CATS,
   isListed, listed, sectionHidden, secTitle
-} from './core.js?v=20261124a';
-import { PAGE_SECTIONS } from './data.js?v=20261124a';
+} from './core.js?v=20261124c';
+import { PAGE_SECTIONS } from './data.js?v=20261124c';
+import { splitWords, parallax } from './motion.js?v=20261124c';
 
 /* Where a subcategory link goes: brands (gift cards, mobile games) open their
    product page, where region and value are picked; others open the shop. */
@@ -206,8 +207,22 @@ const home = {
     const slideEls = $$('.slide', hero);
     document.documentElement.style.setProperty('--dwell', DWELL + 'ms');
 
-    function show(i) {
+    slideEls.forEach(s => splitWords($('h1', s)));
+    let wasTimer = 0;
+    function show(i, dir = i >= cur ? 1 : -1) {
+      const from = cur;
       cur = (i + slides.length) % slides.length;
+      if (cur !== from) {
+        // the new slide wipes across from the side it comes from (mirrored in Arabic)
+        const s = slideEls[cur], side = dir * (isRTL() ? -1 : 1) > 0;
+        s.style.transition = 'none';
+        s.style.clipPath = side ? 'inset(0 0 0 100%)' : 'inset(0 100% 0 0)';
+        void s.offsetWidth;
+        s.style.transition = ''; s.style.clipPath = '';
+        slideEls[from]?.classList.add('was');
+        clearTimeout(wasTimer);
+        wasTimer = setTimeout(() => slideEls.forEach(x => x.classList.remove('was')), 1150);
+      }
       slideEls.forEach((s, n) => s.classList.toggle('on', n === cur));
       $$('.tick', ticks).forEach((tk, n) => {
         tk.classList.remove('on', 'done');
@@ -216,10 +231,10 @@ const home = {
       });
       restart();
     }
-    const next = () => show(cur + 1), prev = () => show(cur - 1);
+    const next = () => show(cur + 1, 1), prev = () => show(cur - 1, -1);
     function restart() { clearInterval(timer); if (!calm()) timer = setInterval(next, DWELL); }
     restart();
-    cleanups.push(() => clearInterval(timer));
+    cleanups.push(() => { clearInterval(timer); clearTimeout(wasTimer); });
 
     $('#next', el).addEventListener('click', next);
     $('#prev', el).addEventListener('click', prev);
@@ -350,6 +365,32 @@ function shopState(ctx) {
   return { cat, sub, q, price, sort, list: base, inCat, items };
 }
 
+/** The glass header of a category: title, line, category chips and three
+    fanned covers that shuffle when you move between categories. */
+function catHero(s, title) {
+  // covers follow the catalogue's own order, so sorting the grid doesn't reshuffle them
+  const shown = new Set(s.items.map(it => (it.fam ? familyLead(it.fam) : it.p)?.id));
+  const covers = PRODUCTS.filter(p => shown.has(p.id)).slice(0, 3);
+  const key = 'hero.d.' + (s.sub ? 'sub' : s.cat || 'all');
+  const line = t(key) === key ? t('hero.d.default') : t(key);
+  const cats = CATEGORIES.filter(c => c.id !== 'all');
+  return `
+    <section class="cat-hero" id="catHero">
+      <div class="cat-hero-txt">
+        <p class="eyebrow" data-intro>${esc(plural('products', s.items.length))} · ${esc(STORE.name)}</p>
+        <h1>${esc(title)}</h1>
+        <p class="cat-hero-d" data-intro>${esc(line)}</p>
+        <nav class="chip-row cat-chips" data-intro aria-label="${esc(t('shop.category'))}">
+          <a class="fchip" href="#/shop" ${!s.cat ? 'aria-current="true"' : ''}>${esc(t('cat.allProducts'))}</a>
+          ${cats.map(c => `<a class="fchip" href="#/shop/${c.id}" ${s.cat === c.id && !s.sub ? 'aria-current="true"' : ''}>${esc(catLabel(c.id))}</a>`).join('')}
+        </nav>
+      </div>
+      <div class="cat-covers" aria-hidden="true">
+        ${covers.map((p, i) => `<div class="cover cover-${i}">${media(p, 'cover-art', { eager: true })}</div>`).join('')}
+      </div>
+    </section>`;
+}
+
 const shop = {
   title: ctx => { const s = shopState(ctx); return s.q ? t('shop.results', { q: s.q }) : s.sub ? subLabel(s.sub) : catLabel(s.cat); },
   render(ctx) {
@@ -362,15 +403,19 @@ const shop = {
     const cats = CATEGORIES.filter(c => c.id !== 'all');
     // brand pages already show one tile per brand, so the chip row would repeat them
     const subs = s.cat && !FAMILY_CATS.includes(s.cat) ? subsOf(s.cat).filter(id => s.inCat.some(p => p.sub === id)) : [];
-    return `
-      <div class="page">
-        ${pageHead(title, plural('products', s.items.length), trail, `
+    const sortSelect = `
           <label class="select-wrap">
             <span class="sr">${esc(t('shop.sort'))}</span>
             <select id="shopSort" class="select">
               ${SHOP_SORTS.map(id => `<option value="${id}" ${id === s.sort ? 'selected' : ''}>${esc(t('ssort.' + id))}</option>`).join('')}
             </select>
-          </label>`)}
+          </label>`;
+    return `
+      <div class="page">
+        ${s.q ? pageHead(title, plural('products', s.items.length), trail, sortSelect) : `
+          ${crumbs(trail)}
+          ${catHero(s, title)}
+          <div class="shop-bar"><p>${esc(t('shop.showing', { what: plural('products', s.items.length) }))}</p>${sortSelect}</div>`}
         ${subs.length ? `
           <nav class="sub-chips" aria-label="${esc(catLabel(s.cat))}">
             <a class="fchip" href="${shopHash({ ...s, sub: '' })}" ${!s.sub ? 'aria-current="true"' : ''}>${esc(t('sub.all'))} <em>${s.inCat.length}</em></a>
@@ -404,6 +449,7 @@ const shop = {
   mount(el, ctx) {
     const s = shopState(ctx);
     $('#shopSort', el).addEventListener('change', e => go(shopHash({ ...s, sort: e.target.value })));
+    return parallax($('#catHero', el));
   }
 };
 

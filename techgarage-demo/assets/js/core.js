@@ -2,8 +2,8 @@
    Everything a page needs lives here so the views stay declarative. */
 
 import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, TOPUP_METHOD, PAYMENT_FEES,
-         RETIRED, CAT_NAMES, ADMIN_KEY, PAGE_SECTIONS, applyAdmin } from './data.js?v=20261124a';
-import { t, plural, price, date, word, blurb, num, lang } from './i18n.js?v=20261124a';
+         RETIRED, CAT_NAMES, ADMIN_KEY, PAGE_SECTIONS, applyAdmin } from './data.js?v=20261124c';
+import { t, plural, price, date, word, blurb, num, lang } from './i18n.js?v=20261124c';
 
 /* ── helpers ───────────────────────────────────────────────────────── */
 export const $  = (s, r = document) => r.querySelector(s);
@@ -433,7 +433,7 @@ export const heartBtn = (p, cls = 'tile-heart') => {
 
 /** The product card used on every shelf and grid. */
 export const tile = (p, i = 0) => `
-  <article class="tile" data-view="${p.id}" style="--d:${Math.min(i, 12) * 45}ms">
+  <article class="tile" data-view="${p.id}" style="--d:${Math.min(i, 12) * 45}ms;--vt:tile-${p.id}">
     ${media(p, 'shot')}
     <span class="tile-tag">${esc(word(p.badge || p.tags[1] || p.tags[0]))}</span>
     ${heartBtn(p)}
@@ -452,13 +452,13 @@ export const familyTile = (fam, i = 0) => {
   const vs = familyVariants(fam), p = vs[0], low = Math.min(...vs.map(v => v.price)), name = subLabel(fam);
   if (vs.length < 2) return tile(p, i);
   return `
-  <article class="tile tile-family" data-view="${p.id}" style="--d:${Math.min(i, 12) * 45}ms">
+  <article class="tile tile-family" data-view="${p.id}" style="--d:${Math.min(i, 12) * 45}ms;--vt:tile-${p.id}">
     ${media(p, 'shot')}
     <span class="tile-tag">${esc(plural('options', vs.length))}</span>
     <div class="tile-body">
       <div class="txt">
         <h3>${esc(name)}</h3>
-        <p>${esc(vs.slice(0, 3).map(valueOf).join(' · '))}${vs.length > 3 ? ' …' : ''}</p>
+        <p><bdi>${esc(vs.slice(0, 3).map(valueOf).join(' · '))}${vs.length > 3 ? ' …' : ''}</bdi></p>
         <span class="px">${esc(t('fam.from', { price: tnd(low) }))}</span>
       </div>
       <button class="round" data-view="${p.id}" aria-label="${esc(t('fam.open', { name }))}">${ICON.chev}</button>

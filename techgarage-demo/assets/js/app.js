@@ -3,15 +3,16 @@
    hash router. Pages live in views.js; state and helpers in core.js;
    wording in i18n.js. */
 
-import { CATEGORIES, NOTIFICATIONS } from './data.js?v=20261124a';
-import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js?v=20261124a';
+import { CATEGORIES, NOTIFICATIONS } from './data.js?v=20261124c';
+import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js?v=20261124c';
 import {
   $, $$, byId, tnd, esc, avatarSrc, go, ICON, state, on,
   cartQty, cartTotal, setQty, addToCart, toggleWish, unreadCount, markRead, noteText,
   applyPrefs, searchProducts, media, fitAll, toast, catLabel, subLabel, subsOf, familyLead, FAMILY_CATS
-} from './core.js?v=20261124a';
-import { VIEWS } from './views.js?v=20261124a';
-import { admin } from './admin.js?v=20261124a';
+} from './core.js?v=20261124c';
+import { VIEWS } from './views.js?v=20261124c';
+import { admin } from './admin.js?v=20261124c';
+import { canMorph, motionOn, introduce, revealOnScroll, tiltCards } from './motion.js?v=20261124c';
 
 VIEWS.admin = admin;
 
@@ -313,6 +314,9 @@ document.addEventListener('click', e => {
     toggleWish(wish.dataset.wish);
   } else if (open) {
     closePops();
+    // the card's picture becomes the product page's picture
+    const m = open.querySelector('.media');
+    if (m && !document.querySelector('.pdp-art') && canMorph()) m.style.viewTransitionName = 'pdp-art';
     go(`#/product/${open.dataset.view}`);
   }
 });
@@ -343,15 +347,18 @@ const ROUTES = [
 
 let current = null;
 
-function route({ keepScroll = false } = {}) {
+function resolve() {
   const raw = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
   const [path, qs] = raw.split('?');
   const query = new URLSearchParams(qs || '');
-  let name = 'notFound', params = [];
   for (const [re, n] of ROUTES) {
     const m = path.replace(/\/$/, '').match(re);
-    if (m) { name = n; params = m.slice(1).filter(Boolean); break; }
+    if (m) return { name: n, params: m.slice(1).filter(Boolean), query };
   }
+  return { name: 'notFound', params: [], query };
+}
+
+function render({ name, params, query }, keepScroll) {
   const scroll = keepScroll ? view.scrollTop : 0;
   current?.cleanup?.();
   const v = VIEWS[name];
@@ -359,17 +366,71 @@ function route({ keepScroll = false } = {}) {
   view.dataset.page = name;
   view.innerHTML = v.render(ctx);
   const cleanup = v.mount?.(view, ctx);
-  current = { name, cleanup: typeof cleanup === 'function' ? cleanup : null, rerenderOn: v.rerenderOn || [] };
+  current = { name, params, cleanup: typeof cleanup === 'function' ? cleanup : null, rerenderOn: v.rerenderOn || [] };
   fitAll(view);
   view.scrollTop = scroll;
   if (!keepScroll) view.focus({ preventScroll: true });
   document.title = `${v.title(ctx)} · ${t('brand')}`;
 
   const cat = name === 'home' ? 'all' : name === 'shop' ? (params[0] || null) : name === 'product' ? byId[params[0]]?.cat ?? null : null;
-  requestAnimationFrame(() => setActiveTab(cat));
+  setActiveTab(cat);                                   // now, so it never waits on a transition frame
+  requestAnimationFrame(() => setActiveTab(cat));      // and again once fonts and layout settle
   setRail(name);
   closeResults();
   closeMega(true);
+}
+
+/* Moving between pages: the old page cross-fades into the new one (View
+   Transitions), shared pictures morph — a card's art grows into the product
+   page and shrinks back on Back, the category covers shuffle — and the new
+   page then builds itself up (motion.js). Re-sorting or filtering the same
+   shop page slides every card to its new place instead. */
+let running = null;   // the view transition in progress, if any
+const clearNames = () => document.querySelectorAll('.media[style*="view-transition-name"]')
+  .forEach(m => m.style.removeProperty('view-transition-name'));
+
+function route({ keepScroll = false } = {}) {
+  const next = resolve(), prev = current;
+  motionOn();
+  // a click while a transition is still playing: finish it at once, show the page plainly
+  const busy = !!running;
+  if (busy) { running.skipTransition(); running = null; }
+  if (busy || keepScroll || !prev || !canMorph() || document.hidden) {
+    clearNames();
+    render(next, keepScroll);
+    if (!keepScroll) { introduce(view); revealOnScroll(view); }
+    return;
+  }
+  const root = document.documentElement;
+  const sameShop = prev.name === 'shop' && next.name === 'shop' && prev.params.join('/') === next.params.join('/');
+  root.classList.toggle('vt-flip', sameShop);
+  root.classList.add('vt-run');
+  const back = prev.name === 'product' && next.name !== 'product' ? prev.params[0] : null;
+  let guard = 0;
+  const vt = document.startViewTransition(() => {
+    clearTimeout(guard);
+    render(next, false);
+    if (sameShop) { view.querySelector('.page')?.classList.add('settled'); return; }
+    if (back) {                       // the product's card takes the picture back
+      const m = view.querySelector(`[data-view="${CSS.escape(back)}"] .media`);
+      const r = m?.getBoundingClientRect();
+      if (r && r.bottom > 0 && r.top < innerHeight) m.style.viewTransitionName = 'pdp-art';
+    }
+    introduce(view);
+  });
+  running = vt;
+  // never keep the shopper waiting: if this device can't take the snapshot
+  // quickly, drop the animation and show the page straight away
+  guard = setTimeout(() => vt.skipTransition(), 300);
+  // a skipped or interrupted transition is normal (fast clicks): nothing to report
+  vt.ready.catch(() => {});
+  vt.updateCallbackDone.catch(() => {});
+  vt.finished.catch(() => {}).finally(() => {
+    if (running === vt) running = null;
+    root.classList.remove('vt-flip', 'vt-run');
+    clearNames();
+    if (!sameShop) revealOnScroll(view);
+  });
 }
 
 ['cart', 'wish', 'orders', 'profile', 'notes'].forEach(ev =>
@@ -394,6 +455,7 @@ on('catalog', () => {
 });
 
 addEventListener('hashchange', () => route());
+tiltCards(document);
 /* The pill must follow its tab's real width, which changes when a web font
    arrives (the Arabic one loads only when Arabic text appears) or the
    window resizes, so watch the tabs themselves rather than guess when. */
