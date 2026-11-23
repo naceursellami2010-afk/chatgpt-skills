@@ -46,28 +46,33 @@ details and the brand accent (`#38a699`, sampled from the site's CSS) are theirs
 The shopper, the notifications and the "recently viewed" history are invented, as a demo
 needs an account to show.
 
-## Layout
+## Pages
 
-| Region | Contents |
-| --- | --- |
-| Icon rail | Store, wishlist, basket, account, support — with live badges |
-| Top bar | Search, category tabs (Trending, PC Games, Gift Cards, Mobile, Software), notifications, account chip |
-| Left column | New Drops (sortable, scrolls) and Recently Viewed |
-| Hero | Five-slide carousel: autoplay, arrows, swipe, arrow keys |
-| Shelf | Four recommendations, filtered by the active tab |
+A single-page app with a hash router — every page has its own address, so links,
+refresh and the browser's Back button all work.
 
-## Interactions
+| Page | Address | What's on it |
+| --- | --- | --- |
+| Home | `#/` | Hero carousel, New Drops, Recently Viewed (your real history), a full-width shelf |
+| Shop | `#/shop`, `#/shop/<category>` | Every product or one category, price filters, sorting |
+| Search | `#/shop?q=…` | Ranked results; the top-bar search suggests as you type |
+| Product | `#/product/<id>` | Artwork, price, quantity, buy / add / save, how delivery works, details, related products, link to the live store |
+| Wishlist | `#/wishlist` | Saved products, add all to basket |
+| Checkout | `#/checkout` | Contact details, player ID for top-ups, payment choice, validation, order summary |
+| Order | `#/order/<id>` | Confirmation, progress timeline, delivered codes and logins (reveal / copy) |
+| Orders | `#/orders` | Order history with status |
+| Profile | `#/profile` | Account summary, stats, every key and account you've been delivered |
+| Settings | `#/settings/<section>` | Profile & avatar, password & two-step, notifications, accent colour & motion, data export & reset |
+| Support | `#/support` | Phone, email, address and opening hours, FAQ, contact form (opens your email app) |
+| Notifications | `#/notifications` | All notifications, mark as read |
 
-Carousel autoplay with per-slide progress, pausing on hover; pointer parallax on the
-hero art. Category tabs with a sliding pill. Live search with match highlighting,
-arrow-key navigation and `/` to focus. Sortable New Drops. Quick-view sheet with specs.
-A basket drawer with quantity steppers and a running TND total, an add-to-basket
-animation that arcs the product into the rail, toasts, and a wishlist. Basket and
-wishlist persist in `localStorage`.
+The shell around them: an icon rail (store, wishlist, basket, profile, settings), the
+category tabs, search, notifications, the account menu and a slide-out basket.
 
-Keyboard: `/` focuses search, `←` `→` drive the carousel, `Esc` closes any overlay.
-`prefers-reduced-motion` disables the drifting background, the autoplay and the
-transitions.
+Everything you do — basket, wishlist, orders, profile, settings, history — is saved in
+your browser. Checkout takes no payment: a placed order "delivers" a few seconds later
+with demo codes, all of which start with `DEMO` and are not real. The payment options
+are placeholders to swap for what the store actually accepts.
 
 ## Design notes
 
@@ -104,10 +109,12 @@ python3 scripts/build_avatars.py
 ## Files
 
 ```
-index.html              markup
+index.html              the app shell
 assets/css/app.css      all styling
-assets/js/data.js       the catalogue
-assets/js/app.js        behaviour, no dependencies
+assets/js/data.js       catalogue, account, orders, FAQ, store details
+assets/js/core.js       shared state, store actions, helpers, product card
+assets/js/views.js      every page
+assets/js/app.js        shell, search, basket, router
 assets/products/        product imagery
 assets/avatars/         gravify-generated avatars
 scripts/                avatar generation
