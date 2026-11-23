@@ -1,0 +1,15 @@
+{
+  "name": "techgarage-demo",
+  "version": "1.0.0",
+  "description": "TechGarage storefront demo (static site; open via any HTTP server)",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "start": "python3 -m http.server 8000"
+  },
+  "dependencies": {
+    "ponytail": "^1.0.57"
+  },
+  "private": true
+}
