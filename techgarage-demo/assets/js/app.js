@@ -3,17 +3,17 @@
    hash router. Pages live in views.js; state and helpers in core.js;
    wording in i18n.js. */
 
-import { CATEGORIES, NOTIFICATIONS } from './data.js?v=20261124f';
-import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js?v=20261124f';
+import { CATEGORIES, NOTIFICATIONS } from './data.js?v=20261124g';
+import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js?v=20261124g';
 import {
   $, $$, byId, tnd, esc, avatarSrc, go, ICON, state, on,
   cartQty, cartTotal, setQty, addToCart, toggleWish, unreadCount, markRead, noteText,
   applyPrefs, searchProducts, media, fitAll, toast, catLabel, subLabel, subsOf, familyLead, FAMILY_CATS
-} from './core.js?v=20261124f';
-import { VIEWS } from './views.js?v=20261124f';
-import { admin } from './admin.js?v=20261124f';
-import { canMorph, motionOn, introduce, revealOnScroll, tiltCards } from './motion.js?v=20261124f';
-import { glassSelects, closeGlassSelect } from './glass-select.js?v=20261124f';
+} from './core.js?v=20261124g';
+import { VIEWS } from './views.js?v=20261124g';
+import { admin } from './admin.js?v=20261124g';
+import { canMorph, motionOn, introduce, revealOnScroll, tiltCards } from './motion.js?v=20261124g';
+import { glassSelects, closeGlassSelect } from './glass-select.js?v=20261124g';
 
 VIEWS.admin = admin;
 

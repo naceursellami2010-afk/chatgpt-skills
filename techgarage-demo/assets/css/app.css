@@ -2769,3 +2769,50 @@ html[lang='ar'] .gsel-group { text-transform: none; letter-spacing: 0; font-size
   .gsel-opt { min-height: 50px; font-size: 16px; }
   .gsel-btn { height: 50px; font-size: 16px; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   19. Touch & input polish (UI/UX Pro Max: touch targets ≥ 44 px,
+       16 px fields on phones, no tap delay)
+   ══════════════════════════════════════════════════════════════════════ */
+a, button, label, select, summary, [role='button'], [role='tab'], [data-view] { touch-action: manipulation; }
+button:not(:disabled), summary, label:has(> input), [data-view], .gsel-opt { cursor: pointer; }
+
+/* small round controls keep their look but get a 44 px hit area */
+.round, .adm-ico { position: relative; }
+.round::after, .tile-heart::after, .adm-ico::after, .pw-toggle::after {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: 44px; height: 44px; transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+.adm-ico::after, .pw-toggle::after { border-radius: 12px; }
+/* carousel ticks: a thin line to look at, a finger-sized strip to tap */
+.tick { box-sizing: content-box; padding: 20px 4px; margin: -20px -4px; background-clip: content-box; overflow: visible; }
+.tick i { border-radius: 99px; }
+
+@media (pointer: coarse) {
+  /* iPhone Safari zooms the page into any field under 16 px — keep them at 16 */
+  input, select, textarea, .adm-inline, .search-field input, .gsel-search input { font-size: 16px !important; }
+  .fchip, .sort-btn, .sort-opt, .see-all, .btn-sm, .mini, .pop-foot, .tab, .source { min-height: 44px; }
+  .fchip, .see-all, .source, .pop-foot { display: inline-flex; align-items: center; }
+  .rail-btn { width: 44px; height: 44px; }
+  .adm-ico { width: 44px; height: 44px; }
+  .check { min-height: 44px; align-items: center; }
+  .crumbs a { display: inline-block; padding-block: 12px; margin-block: -12px; }
+}
+/* the rest of the small controls: stepper, carousel arrows, basket close, choices, admin fields */
+.stepper button, .hero-nav button, #closeCart, .close { position: relative; }
+.stepper button::after, .hero-nav button::after, .close::after, .drawer .close::after {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%);
+}
+@media (pointer: coarse) {
+  .sort-opt { min-height: 44px; }
+  .seg span { min-height: 44px; display: flex; align-items: center; justify-content: center; }
+  .adm-names .field input, .adm-inline, .adm-addsub input, .field input:not([type='checkbox']):not([type='radio']), .select { min-height: 48px; }
+  .stepper button { min-width: 44px; min-height: 44px; }
+  .stepper.small button { min-width: 40px; min-height: 40px; }
+}
+/* phones: the floating dock never covers the end of a page, and stays clear of the home indicator */
+@media (max-width: 960px) {
+  .page { padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
+  .rail { margin-bottom: env(safe-area-inset-bottom, 0px); }
+}
