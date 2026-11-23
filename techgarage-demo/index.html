@@ -7,7 +7,7 @@
 <meta name="description" content="Design demo for techgarage.tn — PC games, gift cards, mobile top-ups and software, delivered digitally in Tunisia.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/app.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2338a699'/%3E%3Cpath d='M9 11h14M16 11v12' stroke='%23062' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
 </head>
@@ -24,28 +24,28 @@
     <div class="app" id="app">
 
       <!-- icon rail -->
-      <nav class="rail" aria-label="Sections">
+      <nav class="rail" aria-label="Sections" data-i18n-attr="aria-label:rail.sections">
         <button class="rail-btn" aria-current="true" data-rail="home" data-go="#/">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.2L12 3l9 7.2V20a1.6 1.6 0 0 1-1.6 1.6H4.6A1.6 1.6 0 0 1 3 20z"/></svg>
-          <span class="tip">Store</span>
+          <span class="tip" data-i18n="rail.store">Store</span>
         </button>
         <button class="rail-btn" data-rail="wishlist" data-go="#/wishlist">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.3 5.6a5 5 0 0 0-7.1 0L12 6.8l-1.2-1.2a5 5 0 1 0-7.1 7.1l8.3 8.3 8.3-8.3a5 5 0 0 0 0-7.1z"/></svg>
-          <span class="tip">Wishlist</span>
+          <span class="tip" data-i18n="rail.wishlist">Wishlist</span>
           <span class="rail-count" id="wishCount">0</span>
         </button>
         <button class="rail-btn" data-rail="cart" id="railCart">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2.2l2.1 11.2a1.8 1.8 0 0 0 1.8 1.5h8.3a1.8 1.8 0 0 0 1.8-1.4L21 8H6.2"/><circle cx="9.5" cy="20" r="1.4"/><circle cx="17.5" cy="20" r="1.4"/></svg>
-          <span class="tip">Basket</span>
+          <span class="tip" data-i18n="rail.basket">Basket</span>
           <span class="rail-count" id="cartCount">0</span>
         </button>
         <button class="rail-btn" data-rail="account" data-go="#/profile">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></svg>
-          <span class="tip">Profile</span>
+          <span class="tip" data-i18n="rail.profile">Profile</span>
         </button>
         <button class="rail-btn" data-rail="settings" data-go="#/settings">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-3-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.2-3l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/></svg>
-          <span class="tip">Settings</span>
+          <span class="tip" data-i18n="rail.settings">Settings</span>
         </button>
       </nav>
 
@@ -53,17 +53,22 @@
       <header class="topbar">
         <div class="search" id="searchWrap">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.4-3.4"/></svg>
-          <input id="search" type="search" placeholder="Search the store" autocomplete="off" aria-label="Search products" aria-expanded="false" aria-controls="results">
+          <input id="search" type="search" placeholder="Search the store" autocomplete="off" aria-label="Search products" data-i18n-attr="placeholder:search.ph,aria-label:search.label" aria-expanded="false" aria-controls="results">
           <kbd>/</kbd>
-          <div class="results" id="results" role="listbox" aria-label="Search results"></div>
+          <div class="results" id="results" role="listbox" aria-label="Search results" data-i18n-attr="aria-label:search.results"></div>
         </div>
 
-        <nav class="tabs" id="tabs" role="tablist" aria-label="Categories">
+        <nav class="tabs" id="tabs" role="tablist" aria-label="Categories" data-i18n-attr="aria-label:tabs.label">
           <span class="tab-pill" id="tabPill" aria-hidden="true"></span>
         </nav>
+        <div class="mega" id="mega" role="menu" hidden></div>
 
         <div class="topbar-right">
-          <button class="icon-btn" id="bell" aria-label="Notifications" aria-expanded="false">
+          <button class="icon-btn lang-btn" id="langBtn" aria-label="Language" aria-expanded="false" data-i18n-attr="aria-label:lang.label">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+            <span class="lang-code" id="langCode">EN</span>
+          </button>
+          <button class="icon-btn" id="bell" aria-label="Notifications" aria-expanded="false" data-i18n-attr="aria-label:bell">
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.5a6 6 0 1 0-12 0c0 6-2.2 7.5-2.2 7.5h16.4S18 14.5 18 8.5"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/></svg>
             <span class="dot" id="bellDot" hidden></span>
           </button>
@@ -76,6 +81,7 @@
 
           <div class="pop" id="bellPop"></div>
           <div class="pop" id="accountPop" style="width:270px"></div>
+          <div class="pop" id="langPop" role="menu" style="width:210px"></div>
         </div>
       </header>
 
@@ -85,17 +91,17 @@
       <!-- overlays -->
       <div class="scrim" id="scrim"></div>
 
-      <aside class="drawer" id="drawer" aria-label="Basket" aria-hidden="true">
+      <aside class="drawer" id="drawer" aria-label="Basket" aria-hidden="true" data-i18n-attr="aria-label:rail.basket">
         <div class="drawer-head">
-          <h2>Your basket</h2>
-          <button class="close" id="closeCart" aria-label="Close basket">
+          <h2 data-i18n="basket.title">Your basket</h2>
+          <button class="close" id="closeCart" aria-label="Close basket" data-i18n-attr="aria-label:basket.close">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
           </button>
         </div>
         <div class="lines" id="lines"></div>
         <div class="drawer-foot">
-          <div class="total"><span>Total</span><b id="total">TND0.000</b></div>
-          <button class="btn btn-solid" id="checkout">Checkout</button>
+          <div class="total"><span data-i18n="basket.total">Total</span><b id="total">0 DT</b></div>
+          <button class="btn btn-solid" id="checkout" data-i18n="basket.checkout">Checkout</button>
         </div>
       </aside>
 

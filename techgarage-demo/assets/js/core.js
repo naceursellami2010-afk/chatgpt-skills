@@ -1,24 +1,25 @@
 /* TechGarage demo — shared state, store actions and UI primitives.
    Everything a page needs lives here so the views stay declarative. */
 
-import { PRODUCTS, CATEGORIES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, PAYMENT_METHODS } from './data.js';
+import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS } from './data.js';
+import { t, price, date, word, blurb } from './i18n.js';
 
 /* ── helpers ───────────────────────────────────────────────────────── */
 export const $  = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 export const byId = Object.fromEntries(PRODUCTS.map(p => [p.id, p]));
 
-/** Every price is a whole number of dinars, written the Tunisian way. */
-export const tnd = n => n.toLocaleString('en-US') + ' DT';
+export const tnd = price;
+export const fmtDate = date;
 
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-export const catLabel = id => (CATEGORIES.find(c => c.id === id) || {}).label || 'All products';
+export const catLabel = id => id && CATEGORIES.some(c => c.id === id) ? t('cat.' + id) : t('cat.allProducts');
+export const subLabel = id => SUB_NAMES[id] || t('sub.' + id);
+export const subsOf = cat => (CATEGORIES.find(c => c.id === cat) || {}).subs || [];
 export const avatarSrc = name => `assets/avatars/${name}.png`;
-export const payLabel = id => (PAYMENT_METHODS.find(m => m.id === id) || {}).label || id;
-
-export const fmtDate = t => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+export const payLabel = id => t('pay.' + id);
 
 /** Navigate; re-runs the route when the hash is already current. */
 export function go(hash) {
@@ -27,9 +28,10 @@ export function go(hash) {
 }
 
 /* ── icons ─────────────────────────────────────────────────────────── */
-const svg = (d, w = 16, sw = 2) =>
-  `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const svg = (d, w = 16, sw = 2, cls = '') =>
+  `<svg${cls ? ` class="${cls}"` : ''} width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 
+/* Icons with a direction carry class "dir" so right-to-left layouts mirror them. */
 export const ICON = {
   cart:   svg('<path d="M3 4h2.2l2.1 11.2a1.8 1.8 0 0 0 1.8 1.5h8.3a1.8 1.8 0 0 0 1.8-1.4L21 8H6.2"/><circle cx="9.5" cy="20" r="1.4"/><circle cx="17.5" cy="20" r="1.4"/>', 15),
   plus:   svg('<path d="M12 5v14M5 12h14"/>', 16, 2.4),
@@ -39,12 +41,12 @@ export const ICON = {
   dots:   '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
   heart:  svg('<path d="M20.3 5.6a5 5 0 0 0-7.1 0L12 6.8l-1.2-1.2a5 5 0 1 0-7.1 7.1l8.3 8.3 8.3-8.3a5 5 0 0 0 0-7.1z"/>', 15),
   heartOn:'<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M20.3 5.6a5 5 0 0 0-7.1 0L12 6.8l-1.2-1.2a5 5 0 1 0-7.1 7.1l8.3 8.3 8.3-8.3a5 5 0 0 0 0-7.1z"/></svg>',
-  trash:  svg('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>', 15),
   copy:   svg('<rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>', 15),
   eye:    svg('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', 15),
   eyeOff: svg('<path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.3 4.2M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2"/>', 15),
-  out:    svg('<path d="M7 17L17 7M9 7h8v8"/>', 11, 2.4),
-  chev:   svg('<path d="M9 6l6 6-6 6"/>', 14, 2.2),
+  out:    svg('<path d="M7 17L17 7M9 7h8v8"/>', 11, 2.4, 'dir'),
+  chev:   svg('<path d="M9 6l6 6-6 6"/>', 14, 2.2, 'dir'),
+  down:   svg('<path d="M6 9l6 6 6-6"/>', 12, 2.4),
   mail:   svg('<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/>', 20, 1.8),
   phone:  svg('<path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2z"/>', 20, 1.8),
   pin:    svg('<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', 20, 1.8),
@@ -56,6 +58,7 @@ export const ICON = {
   bell:   svg('<path d="M18 8.5a6 6 0 1 0-12 0c0 6-2.2 7.5-2.2 7.5h16.4S18 14.5 18 8.5"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/>', 18, 1.8),
   palette:svg('<path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-1.8 0-.5-.2-.9-.5-1.3-.3-.3-.5-.8-.5-1.3 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="14.5" cy="7" r="1.2"/>', 18, 1.8),
   lock:   svg('<rect x="4" y="10.5" width="16" height="11" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>', 18, 1.8),
+  globe:  svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>', 18, 1.8),
   download: svg('<path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/>', 16),
   heartBig: svg('<path d="M20.3 5.6a5 5 0 0 0-7.1 0L12 6.8l-1.2-1.2a5 5 0 1 0-7.1 7.1l8.3 8.3 8.3-8.3a5 5 0 0 0 0-7.1z"/>', 34, 1.4),
   cartBig:  svg('<path d="M3 4h2.2l2.1 11.2a1.8 1.8 0 0 0 1.8 1.5h8.3a1.8 1.8 0 0 0 1.8-1.4L21 8H6.2"/><circle cx="9.5" cy="20" r="1.4"/><circle cx="17.5" cy="20" r="1.4"/>', 34, 1.4),
@@ -63,7 +66,7 @@ export const ICON = {
 };
 
 /* ── persistence ───────────────────────────────────────────────────── */
-const KEYS = ['tg.cart', 'tg.wish', 'tg.prefs', 'tg.profile', 'tg.orders', 'tg.viewed', 'tg.read'];
+const KEYS = ['tg.cart', 'tg.wish', 'tg.prefs', 'tg.profile', 'tg.orders', 'tg.viewed', 'tg.read', 'tg.lang'];
 
 const load = (k, fallback) => {
   try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; }
@@ -112,7 +115,7 @@ export function addToCart(id, qty = 1, fromImg = null) {
   save('tg.cart', state.cart);
   emit('cart');
   if (fromImg) fly(fromImg, byId[id]);
-  toast(`${byId[id].short} added to basket`, true);
+  toast(t('toast.added', { name: byId[id].short }), true);
 }
 
 export function setQty(id, qty) {
@@ -134,7 +137,7 @@ export function toggleWish(id) {
   has ? state.wish.delete(id) : state.wish.add(id);
   save('tg.wish', [...state.wish]);
   emit('wish');
-  toast(has ? 'Removed from wishlist' : 'Saved to wishlist', !has);
+  toast(t(has ? 'toast.removed' : 'toast.saved'), !has);
   return !has;
 }
 
@@ -156,6 +159,13 @@ export function markRead(ids = NOTIFICATIONS.map(n => n.id)) {
   save('tg.read', [...state.read]);
   emit('notes');
 }
+
+/** A notification's text in the current language. */
+export const noteText = n => ({
+  title: t(n.id + '.t'),
+  body: t(n.id + '.b', { price: tnd(n.price || 0) }),
+  when: t('ago.' + n.unit, { n: n.ago })
+});
 
 /* ── profile & preferences ─────────────────────────────────────────── */
 export function saveProfile(patch) {
@@ -184,9 +194,9 @@ export const calm = () =>
 const DELIVERY_DELAY = 6000;  // a placed demo order "arrives" after a few seconds
 
 const normalise = o => {
-  const date = typeof o.date === 'number' ? o.date : Date.parse(o.date);
+  const when = typeof o.date === 'number' ? o.date : Date.parse(o.date);
   const status = o.status === 'processing' && o.deliverAt && Date.now() >= o.deliverAt ? 'delivered' : o.status;
-  return { ...o, date, status };
+  return { ...o, date: when, status };
 };
 
 export const allOrders = () => [...state.orders, ...ORDERS_SEED].map(normalise).sort((a, b) => b.date - a.date);
@@ -214,9 +224,9 @@ export function placeOrder({ name, email, phone, payment, playerId }) {
 
 /* ── delivery: what the shopper receives, and a demo credential for it ── */
 export function deliveryType(p) {
-  if (p.cat === 'mobile') return 'topup';
+  if (p.cat === 'mobile' || p.sub === 'topups' || p.sub === 'apps') return 'topup';
   if (p.cat === 'cards') return 'code';
-  if (p.tags.some(t => /account/i.test(t))) return 'account';
+  if (p.tags.some(tag => /account/i.test(tag))) return 'account';
   return 'key';
 }
 
@@ -237,54 +247,115 @@ export function credential(order, id) {
   const rand = seeded(order.id + ':' + id);
   switch (deliveryType(p)) {
     case 'account':
-      return { label: 'Account login', login: `tg.${block(rand, 6).toLowerCase()}@example.com`, secret: `DEMO-${block(rand, 10)}` };
+      return { label: t('cred.account'), login: `tg.${block(rand, 6).toLowerCase()}@example.com`, secret: `DEMO-${block(rand, 10)}` };
     case 'topup':
-      return { label: 'Top-up', note: `Credited to player ID ${order.playerId || '—'}` };
+      return { label: t('cred.topup'), note: t('cred.credited', { id: order.playerId || '—' }) };
     case 'code':
-      return { label: 'Gift card code', secret: 'DEMO-' + [4, 4, 4, 4].map(n => block(rand, n)).join('-') };
+      return { label: t('cred.code'), secret: 'DEMO-' + [4, 4, 4, 4].map(n => block(rand, n)).join('-') };
     default:
-      return { label: 'Activation key', secret: 'DEMO-' + [5, 5, 5].map(n => block(rand, n)).join('-') };
+      return { label: t('cred.key'), secret: 'DEMO-' + [5, 5, 5].map(n => block(rand, n)).join('-') };
   }
 }
 
 /* ── search ────────────────────────────────────────────────────────── */
-/** Hits on the displayed name rank above tags, which rank above the long
-    store title — otherwise "steam" lists every Fresh Steam Account first. */
+/** Hits on the displayed name rank first, then brand / subcategory / tags,
+    then the long store title — so "steam" lists the Steam Wallet cards
+    before every Fresh Steam Account. Matches English and the current language. */
 export function searchProducts(query) {
   const q = query.trim().toLowerCase();
   if (!q) return [];
-  const rank = p =>
-    p.short.toLowerCase().includes(q) ? 0 :
-    p.tags.join(' ').toLowerCase().includes(q) ? 1 :
-    p.name.toLowerCase().includes(q) ? 2 : -1;
+  const rank = p => {
+    if (p.short.toLowerCase().includes(q)) return 0;
+    const meta = [subLabel(p.sub), catLabel(p.cat), ...p.tags, ...p.tags.map(word)].join(' ').toLowerCase();
+    if (meta.includes(q)) return 1;
+    if (p.name.toLowerCase().includes(q)) return 2;
+    return -1;
+  };
   return PRODUCTS.map(p => [rank(p), p]).filter(([r]) => r >= 0).sort((a, b) => a[0] - b[0]).map(([, p]) => p);
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   Smart photo fit
+   Every product photo sits in a .media box. When the picture loads we read
+   its real size and transparency and compare it with the box:
+     cover   — shapes are close, so it fills the box with almost no crop
+     contain — shapes differ, so the whole picture shows on a blurred copy
+     cut     — transparent cut-out, shown whole with a shadow, no backdrop
+     small   — much smaller than the box, shown at its own size, never blown up
+   Boxes marked data-adapt take the picture's own shape instead.
+   A ResizeObserver re-checks when the box changes size.
+   ══════════════════════════════════════════════════════════════════════ */
+export const media = (p, cls = '', { adapt = false, eager = false, alt = '', mode = '' } = {}) =>
+  `<div class="media${cls ? ' ' + cls : ''}" data-fit="auto"${adapt ? ' data-adapt="1"' : ''}${mode ? ` data-mode="${mode}"` : ''}>` +
+  `<img class="m-bg" src="${p.img}" alt="" aria-hidden="true" decoding="async"${eager ? '' : ' loading="lazy"'}>` +
+  `<img class="m-fg" src="${p.img}" alt="${esc(alt)}" decoding="async"${eager ? '' : ' loading="lazy"'}></div>`;
+
+function hasAlpha(img) {
+  try {
+    const c = document.createElement('canvas');
+    c.width = c.height = 12;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, 12, 12);
+    const d = x.getImageData(0, 0, 12, 12).data;
+    return [0, 11, 132, 143].filter(i => d[i * 4 + 3] < 16).length >= 3;   // three transparent corners
+  } catch { return false; }   // cross-origin pixels can't be read: treat as opaque
+}
+
+export function fitBox(box) {
+  const img = box.querySelector('.m-fg');
+  if (!img || !img.naturalWidth) return;
+  if (box._alpha === undefined) box._alpha = hasAlpha(img);
+  const ir = img.naturalWidth / img.naturalHeight;
+  if (box.dataset.adapt) {
+    box.style.aspectRatio = String(Math.min(1.8, Math.max(0.7, ir)));
+    box.dataset.fit = box._alpha ? 'cut' : 'cover';
+    return;
+  }
+  const w = box.clientWidth, h = box.clientHeight;
+  if (!w || !h) return;
+  box.dataset.shape = ir > 1.15 ? 'wide' : ir < .87 ? 'tall' : 'square';
+  if (box.dataset.mode === 'banner') {
+    // the hero is made for banners: anything landscape fills it, text sits on the scrim;
+    // square and portrait art becomes the feathered side poster
+    box.dataset.fit = box._alpha ? 'cut' : ir >= 1.4 ? 'cover' : 'contain';
+    return;
+  }
+  const br = w / h;
+  const gap = Math.max(ir, br) / Math.min(ir, br);
+  const small = img.naturalWidth < w * .5 && img.naturalHeight < h * .5;
+  box.dataset.fit = box._alpha ? 'cut' : small ? 'small' : gap <= 1.3 ? 'cover' : 'contain';
+}
+
+const resizer = 'ResizeObserver' in window ? new ResizeObserver(es => es.forEach(e => fitBox(e.target))) : null;
+const track = box => { fitBox(box); resizer?.observe(box); };
+
+document.addEventListener('load', e => {
+  if (e.target.classList?.contains('m-fg')) track(e.target.parentElement);
+}, true);
+
+/** For pictures that finished loading before their box was in the page. */
+export const fitAll = (root = document) =>
+  $$('.media', root).forEach(box => { const i = box.querySelector('.m-fg'); if (i?.complete && i.naturalWidth) track(box); });
+
 /* ── shared markup ─────────────────────────────────────────────────── */
-export const art = (p, cls = 'shot') =>
-  `<div class="${cls}${p.kind === 'cut' ? ' cut' : ''}"><img src="${p.img}" alt="" loading="lazy" decoding="async"></div>`;
-
-export const thumb = (p, cls = 'thumb') =>
-  `<div class="${cls}${p.kind === 'cut' ? ' cut' : ''}"><img src="${p.img}" alt="" loading="lazy"></div>`;
-
 export const heartBtn = (p, cls = 'tile-heart') => {
-  const on = state.wish.has(p.id);
-  return `<button class="${cls}${on ? ' on' : ''}" data-wish="${p.id}" aria-pressed="${on}" aria-label="${on ? 'Remove' : 'Save'} ${esc(p.short)}">${on ? ICON.heartOn : ICON.heart}</button>`;
+  const yes = state.wish.has(p.id);
+  return `<button class="${cls}${yes ? ' on' : ''}" data-wish="${p.id}" aria-pressed="${yes}" aria-label="${esc(t(yes ? 'heart.remove' : 'heart.save', { name: p.short }))}">${yes ? ICON.heartOn : ICON.heart}</button>`;
 };
 
 /** The product card used on every shelf and grid. */
 export const tile = (p, i = 0) => `
   <article class="tile" data-view="${p.id}" style="--d:${Math.min(i, 12) * 45}ms">
-    ${art(p)}
-    <span class="tile-tag">${esc(p.badge || p.tags[1] || p.tags[0])}</span>
+    ${media(p, 'shot')}
+    <span class="tile-tag">${esc(word(p.badge || p.tags[1] || p.tags[0]))}</span>
     ${heartBtn(p)}
     <div class="tile-body">
       <div class="txt">
         <h3>${esc(p.short)}</h3>
-        <p>${esc(p.blurb)}</p>
+        <p>${esc(blurb(p))}</p>
         <span class="px">${tnd(p.price)}</span>
       </div>
-      <button class="round" data-add="${p.id}" aria-label="Add ${esc(p.short)} to basket">${ICON.plus}</button>
+      <button class="round" data-add="${p.id}" aria-label="${esc(t('buy.addNamed', { name: p.short }))}">${ICON.plus}</button>
     </div>
   </article>`;
 
@@ -292,13 +363,13 @@ export const tile = (p, i = 0) => `
 export function toast(msg, ok = false) {
   const host = $('#toasts');
   if (!host) return;
-  const t = document.createElement('div');
-  t.className = 'toast';
-  t.innerHTML = (ok ? `<span class="ok">${ICON.check}</span>` : '') + esc(msg);
-  host.append(t);
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = (ok ? `<span class="ok">${ICON.check}</span>` : '') + `<span>${esc(msg)}</span>`;
+  host.append(el);
   setTimeout(() => {
-    t.classList.add('out');
-    t.addEventListener('animationend', () => t.remove(), { once: true });
+    el.classList.add('out');
+    el.addEventListener('animationend', () => el.remove(), { once: true });
   }, 2600);
 }
 

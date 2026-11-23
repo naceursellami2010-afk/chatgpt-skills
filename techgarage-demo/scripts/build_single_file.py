@@ -18,7 +18,7 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-MODULES = ["data.js", "core.js", "views.js", "app.js"]   # dependency order
+MODULES = ["data.js", "i18n.js", "core.js", "views.js", "app.js"]   # dependency order
 
 
 def data_uri(path: pathlib.Path) -> str:

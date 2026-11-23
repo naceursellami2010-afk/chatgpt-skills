@@ -1,18 +1,33 @@
 /* TechGarage demo — the app shell.
-   Top bar, rail, search, basket drawer, shared actions and the hash router.
-   Pages live in views.js; state and helpers in core.js. */
+   Top bar, rail, search, language, basket drawer, shared actions and the
+   hash router. Pages live in views.js; state and helpers in core.js;
+   wording in i18n.js. */
 
 import { CATEGORIES, NOTIFICATIONS } from './data.js';
+import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js';
 import {
-  $, $$, byId, tnd, esc, avatarSrc, go, ICON, state, on, emit,
-  cartQty, cartTotal, setQty, addToCart, toggleWish, unreadCount, markRead,
-  applyPrefs, searchProducts, thumb, toast
+  $, $$, byId, tnd, esc, avatarSrc, go, ICON, state, on,
+  cartQty, cartTotal, setQty, addToCart, toggleWish, unreadCount, markRead, noteText,
+  applyPrefs, searchProducts, media, fitAll, toast, catLabel, subLabel, subsOf
 } from './core.js';
 import { VIEWS } from './views.js';
 
+applyLang();
 applyPrefs();
 
 const view = $('#view');
+
+/* ══════════════════════════════════════════════════════════════════════
+   Static text in index.html  (data-i18n="key", data-i18n-attr="attr:key,…")
+   ══════════════════════════════════════════════════════════════════════ */
+function renderStatic() {
+  $$('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $$('[data-i18n-attr]').forEach(el => el.dataset.i18nAttr.split(',').forEach(pair => {
+    const [attr, key] = pair.split(':');
+    el.setAttribute(attr, t(key));
+  }));
+  $('#langCode').textContent = langInfo().short;
+}
 
 /* ══════════════════════════════════════════════════════════════════════
    Popovers
@@ -30,13 +45,13 @@ function wirePop(btn, pop, onOpen) {
   });
   pop.addEventListener('click', e => {
     e.stopPropagation();
-    if (e.target.closest('a')) closePops();
+    if (e.target.closest('a, [data-lang]')) closePops();
   });
 }
 document.addEventListener('click', closePops);
 
 /* ══════════════════════════════════════════════════════════════════════
-   Account chip, account menu, notifications
+   Account chip, account menu, notifications, language
    ══════════════════════════════════════════════════════════════════════ */
 function renderAccount() {
   const pr = state.profile;
@@ -46,60 +61,107 @@ function renderAccount() {
   $('#accountPop').innerHTML = `
     <a class="pop-head" href="#/profile">
       <img src="${avatarSrc(pr.avatar)}" alt="">
-      <span><b>${esc(pr.name)}</b><p>${esc(pr.email)}</p></span>
+      <span><b>${esc(pr.name)}</b><p dir="ltr">${esc(pr.email)}</p></span>
     </a>
     <hr>
-    <a class="pop-row" href="#/profile"><span class="pop-ico">${ICON.user}</span><b>Profile</b></a>
-    <a class="pop-row" href="#/orders"><span class="pop-ico">${ICON.box}</span><b>Orders</b></a>
-    <a class="pop-row" href="#/wishlist"><span class="pop-ico">${ICON.heart}</span><b>Wishlist</b><em class="pop-count">${state.wish.size || ''}</em></a>
-    <a class="pop-row" href="#/settings"><span class="pop-ico">${ICON.palette}</span><b>Settings</b></a>
-    <a class="pop-row" href="#/support"><span class="pop-ico">${ICON.phone}</span><b>Support</b></a>
+    <a class="pop-row" href="#/profile"><span class="pop-ico">${ICON.user}</span><b>${esc(t('menu.profile'))}</b></a>
+    <a class="pop-row" href="#/orders"><span class="pop-ico">${ICON.box}</span><b>${esc(t('menu.orders'))}</b></a>
+    <a class="pop-row" href="#/wishlist"><span class="pop-ico">${ICON.heart}</span><b>${esc(t('menu.wishlist'))}</b><em class="pop-count">${state.wish.size || ''}</em></a>
+    <a class="pop-row" href="#/settings"><span class="pop-ico">${ICON.palette}</span><b>${esc(t('menu.settings'))}</b></a>
+    <a class="pop-row" href="#/support"><span class="pop-ico">${ICON.phone}</span><b>${esc(t('menu.support'))}</b></a>
     <hr>
-    <button class="pop-row" id="signOut"><span class="pop-ico">${ICON.lock}</span><b>Sign out</b></button>`;
-  $('#signOut').addEventListener('click', () => { closePops(); toast('Signing out isn’t part of this demo'); });
+    <button class="pop-row" id="signOut"><span class="pop-ico">${ICON.lock}</span><b>${esc(t('menu.signout'))}</b></button>`;
+  $('#signOut').addEventListener('click', () => { closePops(); toast(t('toast.signout')); });
 }
 
 function renderBell() {
-  const unread = unreadCount();
-  $('#bellDot').hidden = unread === 0;
-  $('#bellPop').innerHTML = `<h4>Notifications</h4>` + NOTIFICATIONS.map(n => `
+  $('#bellDot').hidden = unreadCount() === 0;
+  $('#bellPop').innerHTML = `<h4>${esc(t('bell'))}</h4>` + NOTIFICATIONS.map(n => { const x = noteText(n); return `
     <a class="pop-row${state.read.has(n.id) ? '' : ' unread'}" href="${n.href}">
       <img src="${avatarSrc(n.who)}" alt="">
-      <span style="flex:1"><b>${esc(n.title)}</b><p>${esc(n.body)}</p></span>
-      <time>${n.when}</time>
-    </a>`).join('') + `<a class="pop-foot" href="#/notifications">View all notifications</a>`;
+      <span style="flex:1"><b>${esc(x.title)}</b><p>${esc(x.body)}</p></span>
+      <time>${esc(x.when)}</time>
+    </a>`; }).join('') + `<a class="pop-foot" href="#/notifications">${esc(t('notif.viewAll'))}</a>`;
 }
+
+function renderLangPop() {
+  $('#langPop').innerHTML = `<h4>${esc(t('lang.label'))}</h4>` + LANGS.map(l => `
+    <button class="pop-row lang-opt" data-lang="${l.id}" role="menuitemradio" aria-checked="${lang() === l.id}" lang="${l.id}">
+      <span class="lang-badge">${esc(l.short)}</span><b>${esc(l.label)}</b>${lang() === l.id ? `<span class="lang-on">${ICON.check}</span>` : ''}
+    </button>`).join('');
+}
+$('#langPop').addEventListener('click', e => {
+  const b = e.target.closest('[data-lang]');
+  if (b) setLang(b.dataset.lang);
+});
 
 wirePop($('#bell'), $('#bellPop'), () => setTimeout(() => markRead(), 900));
 wirePop($('#accountBtn'), $('#accountPop'));
-renderAccount();
-renderBell();
+wirePop($('#langBtn'), $('#langPop'));
 on('profile', renderAccount);
 on('wish', renderAccount);
 on('notes', renderBell);
 
 /* ══════════════════════════════════════════════════════════════════════
-   Category tabs — Trending is home, the rest open the shop
+   Category tabs — Trending is home, the rest open the shop.
+   Hovering a tab opens a menu of its subcategories, like techgarage.tn.
    ══════════════════════════════════════════════════════════════════════ */
-const tabsEl = $('#tabs'), pill = $('#tabPill');
-CATEGORIES.forEach(c => {
-  const a = document.createElement('a');
-  a.className = 'tab';
-  a.role = 'tab';
-  a.textContent = c.label;
-  a.dataset.cat = c.id;
-  a.href = c.id === 'all' ? '#/' : `#/shop/${c.id}`;
-  tabsEl.append(a);
-});
+const tabsEl = $('#tabs'), pill = $('#tabPill'), mega = $('#mega');
+let activeCat = 'all', megaTimer = null;
+
+function renderTabs() {
+  $$('.tab', tabsEl).forEach(el => el.remove());
+  CATEGORIES.forEach(c => {
+    const a = document.createElement('a');
+    a.className = 'tab';
+    a.setAttribute('role', 'tab');
+    a.textContent = t('cat.' + c.id);
+    a.dataset.cat = c.id;
+    a.href = c.id === 'all' ? '#/' : `#/shop/${c.id}`;
+    if (c.subs) a.setAttribute('aria-haspopup', 'true');
+    tabsEl.append(a);
+  });
+  setActiveTab(activeCat);
+  if (typeof tabSizes !== 'undefined') watchTabs();   // the tab elements are new, observe them
+}
 
 function setActiveTab(cat) {
-  $$('.tab', tabsEl).forEach(t => t.setAttribute('aria-selected', String(t.dataset.cat === cat)));
+  activeCat = cat;
+  $$('.tab', tabsEl).forEach(el => el.setAttribute('aria-selected', String(el.dataset.cat === cat)));
   const active = tabsEl.querySelector('[aria-selected="true"]');
   pill.style.opacity = active ? '1' : '0';
   if (!active) return;
   pill.style.width = active.offsetWidth + 'px';
   pill.style.transform = `translateX(${active.offsetLeft}px)`;
 }
+
+function openMega(tab) {
+  const cat = tab.dataset.cat, subs = subsOf(cat);
+  if (!subs.length || matchMedia('(max-width: 960px), (hover: none)').matches) return;
+  clearTimeout(megaTimer);
+  mega.innerHTML = `
+    <a class="mega-all" href="#/shop/${cat}">${esc(t('shop.allIn', { cat: catLabel(cat) }))} ${ICON.chev}</a>
+    <div class="mega-grid">${subs.map(id => `<a href="#/shop/${cat}/${id}">${esc(subLabel(id))}</a>`).join('')}</div>`;
+  mega.dataset.cat = cat;
+  mega.hidden = false;
+  const tr = tab.getBoundingClientRect(), pr = mega.offsetParent.getBoundingClientRect();
+  const width = Math.min(subs.length > 8 ? 620 : 340, pr.width - 24);
+  let left = tr.left - pr.left + tr.width / 2 - width / 2;
+  left = Math.max(12, Math.min(left, pr.width - width - 12));
+  Object.assign(mega.style, { width: width + 'px', left: left + 'px' });
+  requestAnimationFrame(() => mega.classList.add('open'));
+}
+function closeMega(now = false) {
+  clearTimeout(megaTimer);
+  const shut = () => { mega.classList.remove('open'); mega.hidden = true; };
+  now ? shut() : (megaTimer = setTimeout(shut, 160));
+}
+tabsEl.addEventListener('mouseover', e => { const tab = e.target.closest('.tab'); if (tab) tab.dataset.cat === 'all' ? closeMega(true) : openMega(tab); });
+tabsEl.addEventListener('mouseleave', () => closeMega());
+tabsEl.addEventListener('focusin', e => { const tab = e.target.closest('.tab'); if (tab && tab.dataset.cat !== 'all') openMega(tab); });
+mega.addEventListener('mouseenter', () => clearTimeout(megaTimer));
+mega.addEventListener('mouseleave', () => closeMega());
+mega.addEventListener('click', e => { if (e.target.closest('a')) closeMega(true); });
 
 /* ══════════════════════════════════════════════════════════════════════
    Search
@@ -123,12 +185,12 @@ function search() {
   results.innerHTML = (hits.length
     ? hits.slice(0, 6).map(p => `
         <button class="result" data-view="${p.id}" role="option">
-          <img src="${p.img}" alt="">
-          <span style="min-width:0"><b>${mark(p.short, q)}</b><span>${esc(p.tags[0])}</span></span>
+          ${media(p, 'thumb', { eager: true })}
+          <span style="min-width:0"><b>${mark(p.short, q)}</b><span>${esc(subLabel(p.sub))}</span></span>
           <span class="px">${tnd(p.price)}</span>
         </button>`).join('')
-    : `<p class="empty">Nothing matches “${esc(input.value.trim())}”.</p>`)
-    + (hits.length ? `<a class="result-all" href="#/shop?q=${encodeURIComponent(input.value.trim())}">See all ${hits.length} result${hits.length === 1 ? '' : 's'}</a>` : '');
+    : `<p class="empty">${esc(t('search.empty', { q: input.value.trim() }))}</p>`)
+    + (hits.length ? `<a class="result-all" href="#/shop?q=${encodeURIComponent(input.value.trim())}">${esc(t('search.seeAll', { n: hits.length }))}</a>` : '');
   results.classList.add('open');
   input.setAttribute('aria-expanded', 'true');
 }
@@ -166,15 +228,15 @@ function renderDrawer() {
   $('#lines').innerHTML = ids.length ? ids.map(id => {
     const p = byId[id];
     return `<div class="line">
-      ${thumb(p)}
+      ${media(p, 'thumb', { eager: true })}
       <span class="txt"><b>${esc(p.short)}</b><span class="px">${tnd(p.price)}</span></span>
       <span class="qty">
-        <button data-dec="${id}" aria-label="One fewer">−</button>
+        <button data-dec="${id}" aria-label="${esc(t('basket.fewer'))}">−</button>
         <span>${state.cart[id]}</span>
-        <button data-inc="${id}" aria-label="One more">+</button>
+        <button data-inc="${id}" aria-label="${esc(t('basket.more'))}">+</button>
       </span>
     </div>`;
-  }).join('') : `<div class="empty-cart">${ICON.cartBig}<p>Your basket is empty.</p><a class="btn btn-ghost" href="#/shop">Browse the store</a></div>`;
+  }).join('') : `<div class="empty-cart">${ICON.cartBig}<p>${esc(t('basket.empty'))}</p><a class="btn btn-ghost" href="#/shop">${esc(t('shop.browse'))}</a></div>`;
   $('#total').textContent = tnd(cartTotal());
   $('#checkout').disabled = !ids.length;
 }
@@ -237,10 +299,10 @@ document.addEventListener('click', e => {
   if (add) {
     e.preventDefault(); e.stopPropagation();
     const host = add.closest('.tile, .drop, .recent-row, .slide');
-    addToCart(add.dataset.add, 1, host?.querySelector('img'));
+    addToCart(add.dataset.add, 1, host?.querySelector('.m-fg'));
   } else if (buy) {
     e.preventDefault();
-    addToCart(buy.dataset.buy, 1, buy.closest('.slide')?.querySelector('img.fg, img'));
+    addToCart(buy.dataset.buy, 1, buy.closest('.slide')?.querySelector('.m-fg'));
     go('#/checkout');
   } else if (wish) {
     e.preventDefault(); e.stopPropagation();
@@ -254,24 +316,24 @@ document.addEventListener('click', e => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.matches('[data-view][tabindex]')) go(`#/product/${e.target.dataset.view}`);
   if (e.key === '/' && !e.target.closest('input, textarea, select')) { e.preventDefault(); input.focus(); }
-  if (e.key === 'Escape') { closeCart(); closePops(); }
+  if (e.key === 'Escape') { closeCart(); closePops(); closeMega(true); }
 });
 
 /* ══════════════════════════════════════════════════════════════════════
    Router
    ══════════════════════════════════════════════════════════════════════ */
 const ROUTES = [
-  [/^$/,                          'home'],
-  [/^shop(?:\/([\w-]+))?$/,       'shop'],
-  [/^product\/([\w-]+)$/,         'product'],
-  [/^wishlist$/,                  'wishlist'],
-  [/^checkout$/,                  'checkout'],
-  [/^orders$/,                    'orders'],
-  [/^order\/([\w-]+)$/,           'order'],
-  [/^profile$/,                   'profile'],
-  [/^settings(?:\/([\w-]+))?$/,   'settings'],
-  [/^support$/,                   'support'],
-  [/^notifications$/,             'notifications']
+  [/^$/,                                  'home'],
+  [/^shop(?:\/([\w-]+))?(?:\/([\w-]+))?$/, 'shop'],
+  [/^product\/([\w-]+)$/,                 'product'],
+  [/^wishlist$/,                          'wishlist'],
+  [/^checkout$/,                          'checkout'],
+  [/^orders$/,                            'orders'],
+  [/^order\/([\w-]+)$/,                   'order'],
+  [/^profile$/,                           'profile'],
+  [/^settings(?:\/([\w-]+))?$/,           'settings'],
+  [/^support$/,                           'support'],
+  [/^notifications$/,                     'notifications']
 ];
 
 let current = null;
@@ -293,22 +355,50 @@ function route({ keepScroll = false } = {}) {
   view.innerHTML = v.render(ctx);
   const cleanup = v.mount?.(view, ctx);
   current = { name, cleanup: typeof cleanup === 'function' ? cleanup : null, rerenderOn: v.rerenderOn || [] };
+  fitAll(view);
   view.scrollTop = scroll;
   if (!keepScroll) view.focus({ preventScroll: true });
-  document.title = `${v.title(ctx)} · TechGarage`;
+  document.title = `${v.title(ctx)} · ${t('brand')}`;
 
-  const cat = name === 'home' ? 'all' : name === 'shop' ? (params[0] || null) : null;
+  const cat = name === 'home' ? 'all' : name === 'shop' ? (params[0] || null) : name === 'product' ? byId[params[0]]?.cat ?? null : null;
   requestAnimationFrame(() => setActiveTab(cat));
   setRail(name);
   closeResults();
+  closeMega(true);
 }
 
 ['cart', 'wish', 'orders', 'profile', 'notes'].forEach(ev =>
   on(ev, () => { if (current?.rerenderOn.includes(ev)) route({ keepScroll: true }); }));
 
-addEventListener('hashchange', () => route());
-addEventListener('resize', () => setActiveTab(tabsEl.querySelector('[aria-selected="true"]')?.dataset.cat ?? null));
-document.fonts?.ready.then(() => setActiveTab(tabsEl.querySelector('[aria-selected="true"]')?.dataset.cat ?? null));
+/* A language change redraws everything in place, keeping the page and scroll. */
+onLang(() => {
+  renderStatic(); renderTabs(); renderAccount(); renderBell(); renderLangPop();
+  if (drawer.classList.contains('open')) renderDrawer(); else $('#total').textContent = tnd(cartTotal());
+  if (input.value) search();
+  route({ keepScroll: true });
+  toast(t('lang.changed'), true);
+});
 
+addEventListener('hashchange', () => route());
+/* The pill must follow its tab's real width, which changes when a web font
+   arrives (the Arabic one loads only when Arabic text appears) or the
+   window resizes, so watch the tabs themselves rather than guess when. */
+const tabSizes = 'ResizeObserver' in window ? new ResizeObserver(() => setActiveTab(activeCat)) : null;
+function watchTabs() {
+  if (!tabSizes) return;
+  tabSizes.disconnect();
+  tabSizes.observe(tabsEl);
+  $$('.tab', tabsEl).forEach(el => tabSizes.observe(el));
+}
+addEventListener('resize', () => setActiveTab(activeCat));
+document.fonts?.addEventListener?.('loadingdone', () => setActiveTab(activeCat));
+document.fonts?.ready.then(() => setActiveTab(activeCat));
+
+renderStatic();
+renderTabs();
+watchTabs();
+renderAccount();
+renderBell();
+renderLangPop();
 syncBadges();
 route();
