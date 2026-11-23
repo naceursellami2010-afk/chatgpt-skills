@@ -9,6 +9,7 @@
     "start": "python3 -m http.server 8000"
   },
   "dependencies": {
+    "arena": "^0.0.2",
     "ponytail": "^1.0.57"
   },
   "private": true
