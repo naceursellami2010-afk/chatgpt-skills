@@ -2668,3 +2668,17 @@ html[lang='ar'] .adm-card h3 { text-transform: none; font-size: 13.5px; }
   .cover { width: 112px; }
 }
 html[lang='ar'] .eyebrow { letter-spacing: 0; text-transform: none; font-size: 13px; }
+
+/* admin: pick-from-a-menu add forms, rename folded away */
+.adm-preset { width: 100%; max-width: 520px; }
+.adm-addsub .adm-preset { flex: 1; max-width: none; min-width: 0; }
+.adm-addsub { flex-wrap: wrap; }
+.adm-addsub input.adm-custom { flex-basis: 100%; order: 3; }
+.adm-rename > summary {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer; list-style: none;
+  padding: 8px 14px; border-radius: 999px; font-size: 14px; font-weight: 500; color: var(--ink-70);
+  background: rgba(10, 12, 18, .26); border: 1px solid var(--edge-soft);
+}
+.adm-rename > summary::-webkit-details-marker { display: none; }
+.adm-rename > summary:hover { color: #fff; background: rgba(255, 255, 255, .08); }
+.adm-rename[open] > summary { margin-bottom: 12px; }

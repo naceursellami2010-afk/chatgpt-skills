@@ -4,13 +4,13 @@
    (see applyAdmin in data.js), saved with commitAdmin(), which re-indexes
    the catalogue and redraws the store — no reload, no server. */
 
-import { PRODUCTS, CATEGORIES, SUB_NAMES, HERO, NEW_DROPS, CAT_NAMES, PAGE_SECTIONS, ADMIN_KEY, loadAdmin, shipped } from './data.js?v=20261124c';
-import { LANGS, t, tIn, plural } from './i18n.js?v=20261124c';
+import { PRODUCTS, CATEGORIES, SUB_NAMES, HERO, NEW_DROPS, CAT_NAMES, PAGE_SECTIONS, ADMIN_KEY, loadAdmin, shipped } from './data.js?v=20261124d';
+import { LANGS, t, tIn, plural, lang } from './i18n.js?v=20261124d';
 import {
   $, $$, byId, tnd, esc, catLabel, subLabel, subsOf, go, ICON, media, fitAll, toast, commitAdmin,
   isListed, listed, regionOf, valueOf, deliveryType, topupMethod
-} from './core.js?v=20261124c';
-import { pageHead, field, emptyState, toggle } from './views.js?v=20261124c';
+} from './core.js?v=20261124d';
+import { pageHead, field, emptyState, toggle } from './views.js?v=20261124d';
 
 /* ── the owner's record ────────────────────────────────────────────── */
 const clone = v => JSON.parse(JSON.stringify(v));
@@ -53,6 +53,73 @@ const move = (arr, id, dir) => {
 /* ══════════════════════════════════════════════════════════════════════
    Categories
    ══════════════════════════════════════════════════════════════════════ */
+/* ── ready-made choices, so a category or subcategory is picked, not typed ──
+   Taken from techgarage.tn's own menu (digital products only), plus a few
+   popular digital lines. Names come in all three languages. */
+const L = (en, fr, ar) => ({ en, fr, ar });
+const CAT_PRESETS = [
+  { group: 'store', id: 'fc-27', names: L('EA FC 27', 'EA FC 27', 'EA FC 27') },
+  { group: 'store', id: 'account-topups', names: L('Account top-ups', 'Recharges de compte', 'شحن الحسابات') },
+  { group: 'store', id: 'mobile-apps', names: L('Mobile apps', 'Applications mobiles', 'تطبيقات الجوال'), grouped: true },
+  { group: 'store', id: 'playstation-games', names: L('PlayStation games', 'Jeux PlayStation', 'ألعاب بلايستيشن') },
+  { group: 'popular', id: 'streaming', names: L('Streaming', 'Streaming', 'البث'), grouped: true },
+  { group: 'popular', id: 'subscriptions', names: L('Subscriptions', 'Abonnements', 'الاشتراكات'), grouped: true },
+  { group: 'popular', id: 'music', names: L('Music', 'Musique', 'الموسيقى'), grouped: true },
+  { group: 'popular', id: 'crypto-cards', names: L('Crypto cards', 'Cartes crypto', 'بطاقات العملات الرقمية'), grouped: true },
+  { group: 'popular', id: 'game-topups', names: L('Game top-ups', 'Recharges de jeux', 'شحن الألعاب'), grouped: true },
+  { group: 'popular', id: 'ai-tools', names: L('AI tools', 'Outils IA', 'أدوات الذكاء الاصطناعي'), grouped: true },
+  { group: 'popular', id: 'vpn-security', names: L('VPN & security', 'VPN et sécurité', 'VPN والحماية') },
+  { group: 'popular', id: 'deals', names: L('Deals', 'Bons plans', 'العروض') }
+];
+const SUB_PRESETS = [
+  { label: L('Gift cards', 'Cartes cadeaux', 'بطاقات الهدايا'), items: [
+    ['fc27-points', 'EA SPORTS FC 27 Points'], ['steam-turkey', 'Steam Turkey'], ['steam-euro', 'Steam Euro'],
+    ['steam-ukraine', 'Steam Ukraine'], ['steam-china', 'Steam China'], ['playstation-usa', 'PlayStation USA'],
+    ['playstation-turkey', 'PlayStation Turkey'], ['playstation-france', 'PlayStation France'],
+    ['playstation-saudi', 'PlayStation Saudi'], ['playstation-germany', 'PlayStation Germany'],
+    ['playstation-canada', 'PlayStation Canada'], ['itunes-usa', 'iTunes USA'], ['itunes-france', 'iTunes France'],
+    ['itunes-turkey', 'iTunes Turkey'], ['apple-music', 'Apple Music'], ['xbox-game-pass', 'Xbox Game Pass'],
+    ['xbox-games', 'Xbox games'], ['google-play', 'Google Play']] },
+  { label: L('Mobile games', 'Jeux mobiles', 'ألعاب الجوال'), items: [
+    ['8ball', '8 Ball Pool'], ['honor-of-kings', 'Honor of Kings'], ['arena-breakout', 'Arena Breakout'],
+    ['delta-force', 'Delta Force'], ['free-fire-max', 'Free Fire MAX'], ['pubg-new-state', 'PUBG: New State']] },
+  { label: L('Top-ups', 'Recharges', 'الشحن'), items: [
+    ['fc27-coins', 'FC 27 Coins'], ['gta5-boosting', 'GTA 5 Online Boosting'], ['rocket-league', 'Rocket League']] },
+  { label: L('PC games', 'Jeux PC', 'ألعاب الحاسوب'), items: [
+    ['ea-fc-27', 'EA FC 27'], ['ubisoft-keys', 'Ubisoft Connect'], ['ea-app-keys', 'EA app'], ['xbox-pc', 'Xbox PC']] },
+  { label: L('Streaming & apps', 'Streaming et applis', 'البث والتطبيقات'), items: [
+    ['netflix', 'Netflix'], ['spotify', 'Spotify'], ['shahid', 'Shahid VIP'], ['disney-plus', 'Disney+'],
+    ['youtube-premium', 'YouTube Premium'], ['osn-plus', 'OSN+'], ['tod', 'TOD'], ['discord-nitro', 'Discord Nitro'],
+    ['chatgpt-plus', 'ChatGPT Plus'], ['canva-pro', 'Canva Pro'], ['tango', 'Tango'], ['dramabox', 'DramaBox']] },
+  { label: L('Software', 'Logiciels', 'البرامج'), items: [
+    ['windows', 'Windows'], ['microsoft-office', 'Microsoft Office'], ['antivirus', 'Antivirus'], ['vpn', 'VPN']] }
+];
+const inLang = o => o[lang()] || o.en;
+const OTHER = '__other';
+
+function catPresetMenu() {
+  const taken = takenGroupIds();
+  const left = CAT_PRESETS.filter(p => !taken.has(p.id));
+  const group = g => left.filter(p => p.group === g).map(p => `<option value="${p.id}">${esc(inLang(p.names))}</option>`).join('');
+  return `<select class="select adm-preset" name="preset" data-change="preset" aria-label="${esc(t('adm.pickCat'))}">
+      <option value="">${esc(t('adm.pickCat'))}</option>
+      ${group('store') ? `<optgroup label="${esc(t('adm.fromStore'))}">${group('store')}</optgroup>` : ''}
+      ${group('popular') ? `<optgroup label="${esc(t('adm.popular'))}">${group('popular')}</optgroup>` : ''}
+      <option value="${OTHER}">${esc(t('adm.other'))}</option>
+    </select>`;
+}
+function subPresetMenu() {
+  const taken = takenGroupIds();
+  return `<select class="select adm-preset" name="preset" data-change="preset" aria-label="${esc(t('adm.pickSub'))}">
+      <option value="">${esc(t('adm.pickSub'))}</option>
+      ${SUB_PRESETS.map(g => {
+        const items = g.items.filter(([id]) => !taken.has(id));
+        return items.length ? `<optgroup label="${esc(inLang(g.label))}">${items.map(([id, name]) => `<option value="${id}">${esc(name)}</option>`).join('')}</optgroup>` : '';
+      }).join('')}
+      <option value="${OTHER}">${esc(t('adm.other'))}</option>
+    </select>`;
+}
+
 function categoriesTab() {
   const cats = CATEGORIES.filter(c => c.id !== 'all');
   const names = (prefix, id) => `<div class="adm-names">${LANG_IDS.map(l => `
@@ -62,7 +129,8 @@ function categoriesTab() {
     <section class="card adm-card">
       <h2>${esc(t('adm.addCat'))}</h2>
       <form class="adm-form" data-form="addCat" novalidate>
-        ${names('new')}
+        ${catPresetMenu()}
+        <div class="adm-custom" hidden>${names('new')}</div>
         <div class="adm-form-foot">
           <label class="check"><input type="checkbox" name="grouped"><span><b>${esc(t('adm.grouped'))}</b> — ${esc(t('adm.groupedD'))}</span></label>
           <button class="btn btn-solid" type="submit">${ICON.plus} ${esc(t('adm.add'))}</button>
@@ -81,7 +149,7 @@ function categoriesTab() {
           </div>
         </header>
         <form class="adm-form" data-form="renameCat" data-id="${esc(c.id)}" novalidate>
-          ${names('cat', c.id)}
+          <details class="adm-rename"><summary>${esc(t('adm.rename'))}</summary>${names('cat', c.id)}</details>
           <div class="adm-form-foot">
             <label class="check"><input type="checkbox" name="grouped" ${c.grouped ? 'checked' : ''}><span><b>${esc(t('adm.grouped'))}</b> — ${esc(t('adm.groupedD'))}</span></label>
             <button class="btn btn-ghost" type="submit">${esc(t('adm.save'))}</button>
@@ -98,7 +166,8 @@ function categoriesTab() {
             </li>`).join('')}
         </ul>
         <form class="adm-addsub" data-form="addSub" data-id="${esc(c.id)}" novalidate>
-          <input name="name" placeholder="${esc(t('adm.newSub'))}" aria-label="${esc(t('adm.newSub'))}">
+          ${subPresetMenu()}
+          <input name="name" class="adm-custom" hidden placeholder="${esc(t('adm.newSub'))}" aria-label="${esc(t('adm.newSub'))}">
           <button class="btn btn-ghost" type="submit">${ICON.plus} ${esc(t('adm.add'))}</button>
         </form>
       </section>`;
@@ -107,9 +176,12 @@ function categoriesTab() {
 
 const catActions = {
   addCat(form) {
-    const n = Object.fromEntries(LANG_IDS.map(l => [l, form.elements[l].value.trim()]));
+    const pick = form.elements.preset.value;
+    if (!pick) { form.elements.preset.focus(); toast(t('adm.pickCat')); return; }
+    const preset = CAT_PRESETS.find(p => p.id === pick);
+    const n = preset ? { ...preset.names } : Object.fromEntries(LANG_IDS.map(l => [l, form.elements[l].value.trim()]));
     if (!n.en) { form.elements.en.focus(); toast(t('adm.nameNeeded')); return; }
-    const id = freshId(n.en, takenGroupIds(), 'cat');
+    const id = preset ? preset.id : freshId(n.en, takenGroupIds(), 'cat');
     change(r => {
       withCats(r).push({ id, grouped: form.elements.grouped.checked, subs: [] });
       (r.catNames ??= {})[id] = n;
@@ -126,9 +198,12 @@ const catActions = {
     });
   },
   addSub(form) {
-    const name = form.elements.name.value.trim();
+    const pick = form.elements.preset.value;
+    if (!pick) { form.elements.preset.focus(); toast(t('adm.pickSub')); return; }
+    const preset = SUB_PRESETS.flatMap(g => g.items).find(([pid]) => pid === pick);
+    const name = preset ? preset[1] : form.elements.name.value.trim();
     if (!name) { form.elements.name.focus(); toast(t('adm.nameNeeded')); return; }
-    const id = freshId(name, takenGroupIds(), 'sub');
+    const id = preset ? preset[0] : freshId(name, takenGroupIds(), 'sub');
     change(r => {
       const c = withCats(r).find(x => x.id === form.dataset.id);
       (c.subs ??= []).push(id);
@@ -515,6 +590,14 @@ export const admin = {
       }
       if (x.id === 'admCat') { productCat = x.value; return go(location.hash); }
       const { change: what, key, id } = x.dataset;
+      if (what === 'preset') {
+        const form = x.form, other = x.value === OTHER;
+        form.querySelectorAll('.adm-custom').forEach(c => { c.hidden = !other; });
+        if (other) form.querySelector('.adm-custom input, input.adm-custom')?.focus();
+        const preset = CAT_PRESETS.find(p => p.id === x.value);
+        if (preset && form.elements.grouped) form.elements.grouped.checked = !!preset.grouped;
+        return;
+      }
       if (what === 'renameSub') {
         const name = x.value.trim();
         if (name && name !== subLabel(id)) change(r => { (r.subNames ??= {})[id] = name; });

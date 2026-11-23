@@ -2,8 +2,8 @@
    Everything a page needs lives here so the views stay declarative. */
 
 import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, TOPUP_METHOD, PAYMENT_FEES,
-         RETIRED, CAT_NAMES, ADMIN_KEY, PAGE_SECTIONS, applyAdmin } from './data.js?v=20261124c';
-import { t, plural, price, date, word, blurb, num, lang } from './i18n.js?v=20261124c';
+         RETIRED, CAT_NAMES, ADMIN_KEY, PAGE_SECTIONS, applyAdmin } from './data.js?v=20261124d';
+import { t, plural, price, date, word, blurb, num, lang } from './i18n.js?v=20261124d';
 
 /* ── helpers ───────────────────────────────────────────────────────── */
 export const $  = (s, r = document) => r.querySelector(s);

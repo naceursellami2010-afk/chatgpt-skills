@@ -127,8 +127,12 @@ Open it from the account menu → **Store admin** (`#/admin`). Every change appl
 whole store at once — tabs, the subcategory menu, shop pages, product pages, search and
 the home page redraw in place.
 
-- **Categories** — add a category with its name in English, French and Arabic (it becomes
-  a tab), rename, reorder, delete; add, rename, reorder and delete subcategories. "Browse by
+- **Categories** — add a category by picking it from a menu (the store's own categories and
+  popular digital ones, with names ready in English, French and Arabic; "Other…" to type
+  one); it becomes a tab straight away. Rename (folded under a button), reorder, delete.
+  Subcategories are picked the same way — every sub-brand on techgarage.tn (Steam Turkey,
+  PlayStation USA, iTunes France, EA FC 27 Points, 8 Ball Pool…) plus popular apps and
+  streaming — then renamed, reordered or deleted. "Browse by
   brand" turns a category into one tile per brand with the region / value picker. A
   category or subcategory that still has products can't be deleted.
 - **Products** — search and filter the catalogue; add a product (photo upload, resized to
