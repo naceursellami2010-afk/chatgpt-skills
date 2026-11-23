@@ -4,13 +4,13 @@
    (see applyAdmin in data.js), saved with commitAdmin(), which re-indexes
    the catalogue and redraws the store — no reload, no server. */
 
-import { PRODUCTS, CATEGORIES, SUB_NAMES, HERO, NEW_DROPS, CAT_NAMES, PAGE_SECTIONS, ADMIN_KEY, loadAdmin, shipped } from './data.js?v=20261124d';
-import { LANGS, t, tIn, plural, lang } from './i18n.js?v=20261124d';
+import { PRODUCTS, CATEGORIES, SUB_NAMES, HERO, NEW_DROPS, CAT_NAMES, PAGE_SECTIONS, ADMIN_KEY, loadAdmin, shipped } from './data.js?v=20261124f';
+import { LANGS, t, tIn, plural, lang } from './i18n.js?v=20261124f';
 import {
   $, $$, byId, tnd, esc, catLabel, subLabel, subsOf, go, ICON, media, fitAll, toast, commitAdmin,
   isListed, listed, regionOf, valueOf, deliveryType, topupMethod
-} from './core.js?v=20261124d';
-import { pageHead, field, emptyState, toggle } from './views.js?v=20261124d';
+} from './core.js?v=20261124f';
+import { pageHead, field, emptyState, toggle } from './views.js?v=20261124f';
 
 /* ── the owner's record ────────────────────────────────────────────── */
 const clone = v => JSON.parse(JSON.stringify(v));
@@ -102,7 +102,7 @@ function catPresetMenu() {
   const left = CAT_PRESETS.filter(p => !taken.has(p.id));
   const group = g => left.filter(p => p.group === g).map(p => `<option value="${p.id}">${esc(inLang(p.names))}</option>`).join('');
   return `<select class="select adm-preset" name="preset" data-change="preset" aria-label="${esc(t('adm.pickCat'))}">
-      <option value="">${esc(t('adm.pickCat'))}</option>
+      <option value="" hidden>${esc(t('adm.pickCat'))}</option>
       ${group('store') ? `<optgroup label="${esc(t('adm.fromStore'))}">${group('store')}</optgroup>` : ''}
       ${group('popular') ? `<optgroup label="${esc(t('adm.popular'))}">${group('popular')}</optgroup>` : ''}
       <option value="${OTHER}">${esc(t('adm.other'))}</option>
@@ -111,7 +111,7 @@ function catPresetMenu() {
 function subPresetMenu() {
   const taken = takenGroupIds();
   return `<select class="select adm-preset" name="preset" data-change="preset" aria-label="${esc(t('adm.pickSub'))}">
-      <option value="">${esc(t('adm.pickSub'))}</option>
+      <option value="" hidden>${esc(t('adm.pickSub'))}</option>
       ${SUB_PRESETS.map(g => {
         const items = g.items.filter(([id]) => !taken.has(id));
         return items.length ? `<optgroup label="${esc(inLang(g.label))}">${items.map(([id, name]) => `<option value="${id}">${esc(name)}</option>`).join('')}</optgroup>` : '';
@@ -467,7 +467,7 @@ const PDP_SECTIONS = [['pdp.how', 'adm.sec.how'], ['pdp.details', 'adm.sec.detai
 
 const productPicker = (key, ids) => `
   <select class="select adm-picker" data-change="listAdd" data-key="${key}" aria-label="${esc(t('adm.addToList'))}">
-    <option value="">${esc(t('adm.addToList'))}</option>
+    <option value="" hidden>${esc(t('adm.addToList'))}</option>
     ${CATEGORIES.filter(c => c.id !== 'all').map(c => `<optgroup label="${esc(catLabel(c.id))}">
       ${PRODUCTS.filter(p => p.cat === c.id && !ids.includes(p.id)).map(p => `<option value="${esc(p.id)}">${esc(p.short)} — ${tnd(p.price)}</option>`).join('')}
     </optgroup>`).join('')}

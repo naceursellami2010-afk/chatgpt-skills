@@ -20,7 +20,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 # Links carry ?v=<date> so browsers fetch fresh files after an update; bump it in
 # index.html and the module imports when shipping changes.
-MODULES = ["data.js", "i18n.js", "core.js", "motion.js", "views.js", "admin.js", "app.js"]   # dependency order
+MODULES = ["data.js", "i18n.js", "core.js", "motion.js", "glass-select.js", "views.js", "admin.js", "app.js"]   # dependency order
 
 
 def data_uri(path: pathlib.Path) -> str:

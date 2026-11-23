@@ -252,6 +252,7 @@ assets/js/data.js       catalogue, categories and subcategories, account, orders
 assets/js/i18n.js       English, French and Arabic: phrases, plurals, prices, dates, product copy, FAQ
 assets/js/core.js       shared state, store actions, smart photo fit, product card
 assets/js/motion.js     page transitions, word-by-word titles, scroll reveals, card tilt
+assets/js/glass-select.js  frosted-glass dropdowns over every <select> (search, keyboard, big rows)
 assets/js/views.js      every page
 assets/js/admin.js      store admin: categories, products, page sections
 assets/js/app.js        shell, search, basket, router
