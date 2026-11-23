@@ -3,14 +3,14 @@
    hash router. Pages live in views.js; state and helpers in core.js;
    wording in i18n.js. */
 
-import { CATEGORIES, NOTIFICATIONS } from './data.js?v=20261123b';
-import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js?v=20261123b';
+import { CATEGORIES, NOTIFICATIONS } from './data.js?v=20261123c';
+import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js?v=20261123c';
 import {
   $, $$, byId, tnd, esc, avatarSrc, go, ICON, state, on,
   cartQty, cartTotal, setQty, addToCart, toggleWish, unreadCount, markRead, noteText,
   applyPrefs, searchProducts, media, fitAll, toast, catLabel, subLabel, subsOf, familyLead, FAMILY_CATS
-} from './core.js?v=20261123b';
-import { VIEWS } from './views.js?v=20261123b';
+} from './core.js?v=20261123c';
+import { VIEWS } from './views.js?v=20261123c';
 
 applyLang();
 applyPrefs();
@@ -263,8 +263,8 @@ drawer.addEventListener('click', e => { if (e.target.closest('a')) closeCart(); 
 $('#checkout').addEventListener('click', () => { closeCart(); go('#/checkout'); });
 $('#lines').addEventListener('click', e => {
   const inc = e.target.closest('[data-inc]'), dec = e.target.closest('[data-dec]');
-  if (inc) setQty(inc.dataset.inc, state.cart[inc.dataset.inc] + 1);
-  if (dec) setQty(dec.dataset.dec, state.cart[dec.dataset.dec] - 1);
+  if (inc && state.cart[inc.dataset.inc]) setQty(inc.dataset.inc, state.cart[inc.dataset.inc] + 1);
+  if (dec && state.cart[dec.dataset.dec]) setQty(dec.dataset.dec, state.cart[dec.dataset.dec] - 1);
 });
 
 on('cart', () => { syncBadges(); if (drawer.classList.contains('open')) renderDrawer(); });

@@ -4,8 +4,8 @@
    the shell, so most markup only needs data-* attributes.
    Every visible word goes through t() / plural() from i18n.js. */
 
-import { PRODUCTS, CATEGORIES, HERO, NEW_DROPS, RECENT, NOTIFICATIONS, STORE, PAYMENT_METHODS, ACCENTS, AVATARS } from './data.js?v=20261123b';
-import { LANGS, t, plural, blurb, word, faq, lang, setLang, isRTL } from './i18n.js?v=20261123b';
+import { PRODUCTS, CATEGORIES, HERO, NEW_DROPS, RECENT, NOTIFICATIONS, STORE, PAYMENT_METHODS, ACCENTS, AVATARS } from './data.js?v=20261123c';
+import { LANGS, t, plural, blurb, word, faq, lang, setLang, isRTL } from './i18n.js?v=20261123c';
 import {
   $, $$, byId, tnd, esc, catLabel, subLabel, subsOf, avatarSrc, payLabel, fmtDate, go, ICON, state,
   cartQty, cartTotal, setQty, addToCart, markViewed, clearViewed, unreadCount, markRead, noteText,
@@ -13,7 +13,7 @@ import {
   paymentFee, feeLabel,
   deliveryType, credential, searchProducts, media, heartBtn, tile, toast, exportData, resetEverything,
   familyOf, familyVariants, familyLead, familyTile, regionOf, valueOf, topupMethod, FAMILY_CATS
-} from './core.js?v=20261123b';
+} from './core.js?v=20261123c';
 
 /* Where a subcategory link goes: brands (gift cards, mobile games) open their
    product page, where region and value are picked; others open the shop. */
@@ -711,10 +711,11 @@ const checkout = {
     const form = $('#checkoutForm', el);
     if (!form) return;
     let timer = null;
-    el.addEventListener('click', e => {
+    // the page container outlives each render, so this listener is removed in the cleanup
+    const onClick = e => {
       const inc = e.target.closest('[data-inc]'), dec = e.target.closest('[data-dec]');
-      if (inc) setQty(inc.dataset.inc, state.cart[inc.dataset.inc] + 1);
-      if (dec) setQty(dec.dataset.dec, state.cart[dec.dataset.dec] - 1);
+      if (inc && state.cart[inc.dataset.inc]) setQty(inc.dataset.inc, state.cart[inc.dataset.inc] + 1);
+      if (dec && state.cart[dec.dataset.dec]) setQty(dec.dataset.dec, state.cart[dec.dataset.dec] - 1);
       const pw = e.target.closest('[data-pw]');
       if (pw) {
         const input = form.elements[pw.dataset.pw], show = input.type === 'password';
@@ -723,7 +724,8 @@ const checkout = {
         pw.setAttribute('aria-pressed', String(show));
         pw.setAttribute('aria-label', t(show ? 'acc.hide' : 'acc.show'));
       }
-    });
+    };
+    el.addEventListener('click', onClick);
     // the fee line and totals follow the chosen payment method
     form.addEventListener('change', e => {
       if (e.target.name !== 'payment') return;
@@ -808,7 +810,7 @@ const checkout = {
       rd.hidden = false;
       timer = setTimeout(() => { rd.remove(); finish(); }, 1400);
     });
-    return () => { clearTimeout(timer); document.querySelector('body > #redirect')?.remove(); };
+    return () => { el.removeEventListener('click', onClick); clearTimeout(timer); document.querySelector('body > #redirect')?.remove(); };
   }
 };
 
@@ -1243,7 +1245,9 @@ const notifications = {
   },
   mount(el) {
     $('#readAll', el)?.addEventListener('click', () => markRead());
-    el.addEventListener('click', e => { const n = e.target.closest('[data-note]'); if (n) markRead([n.dataset.note]); });
+    const onClick = e => { const n = e.target.closest('[data-note]'); if (n) markRead([n.dataset.note]); };
+    el.addEventListener('click', onClick);
+    return () => el.removeEventListener('click', onClick);
   }
 };
 

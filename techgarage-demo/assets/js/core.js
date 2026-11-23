@@ -1,8 +1,8 @@
 /* TechGarage demo — shared state, store actions and UI primitives.
    Everything a page needs lives here so the views stay declarative. */
 
-import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, TOPUP_METHOD, PAYMENT_FEES } from './data.js?v=20261123b';
-import { t, plural, price, date, word, blurb, num } from './i18n.js?v=20261123b';
+import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, TOPUP_METHOD, PAYMENT_FEES } from './data.js?v=20261123c';
+import { t, plural, price, date, word, blurb, num } from './i18n.js?v=20261123c';
 
 /* ── helpers ───────────────────────────────────────────────────────── */
 export const $  = (s, r = document) => r.querySelector(s);
@@ -118,7 +118,7 @@ const known = id => id in byId;
 
 /* Saved data can outlive the catalogue (an earlier build sold hardware), so
    anything that no longer exists is dropped on load. */
-const cleanCart = Object.fromEntries(Object.entries(load('tg.cart', {})).filter(([id, q]) => known(id) && q > 0));
+const cleanCart = Object.fromEntries(Object.entries(load('tg.cart', {})).filter(([id, q]) => known(id) && Number.isInteger(q) && q > 0));
 
 export const state = {
   cart: cleanCart,
@@ -163,8 +163,9 @@ export function addToCart(id, qty = 1, fromImg = null) {
 }
 
 export function setQty(id, qty) {
-  if (qty <= 0) delete state.cart[id];
-  else state.cart[id] = Math.min(qty, 10);
+  // anything that isn't a whole number of at least 1 removes the line
+  if (!Number.isFinite(qty) || qty < 1) delete state.cart[id];
+  else state.cart[id] = Math.min(Math.floor(qty), 10);
   save('tg.cart', state.cart);
   emit('cart');
 }
