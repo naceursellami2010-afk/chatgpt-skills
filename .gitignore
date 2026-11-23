@@ -63,3 +63,4 @@ verify_docs.py
 
 # Installed dependencies for the TechGarage demo
 techgarage-demo/node_modules/
+techgarage-demo/dist/

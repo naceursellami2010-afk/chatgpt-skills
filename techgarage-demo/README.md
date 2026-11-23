@@ -17,6 +17,16 @@ cd techgarage-demo && python3 -m http.server 8000
 Then open <http://localhost:8000>. It must be served over HTTP rather than opened as a
 `file://` path, because the scripts are ES modules.
 
+### One file you can double-click
+
+```bash
+python3 scripts/build_single_file.py   # -> dist/techgarage-demo.html (~3 MB)
+```
+
+Inlines the stylesheet, the scripts and every image, so the page opens straight from
+disk with no server. Only the web font needs a connection; offline it falls back to the
+system font, which on Apple devices is SF Pro anyway.
+
 ## What's real
 
 Every product name, price and category comes from the live techgarage.tn catalogue —
