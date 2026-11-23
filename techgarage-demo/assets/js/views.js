@@ -4,15 +4,16 @@
    the shell, so most markup only needs data-* attributes.
    Every visible word goes through t() / plural() from i18n.js. */
 
-import { PRODUCTS, CATEGORIES, HERO, NEW_DROPS, RECENT, NOTIFICATIONS, STORE, PAYMENT_METHODS, ACCENTS, AVATARS } from './data.js?v=20261123';
-import { LANGS, t, plural, blurb, word, faq, lang, setLang, isRTL } from './i18n.js?v=20261123';
+import { PRODUCTS, CATEGORIES, HERO, NEW_DROPS, RECENT, NOTIFICATIONS, STORE, PAYMENT_METHODS, ACCENTS, AVATARS } from './data.js?v=20261123b';
+import { LANGS, t, plural, blurb, word, faq, lang, setLang, isRTL } from './i18n.js?v=20261123b';
 import {
   $, $$, byId, tnd, esc, catLabel, subLabel, subsOf, avatarSrc, payLabel, fmtDate, go, ICON, state,
   cartQty, cartTotal, setQty, addToCart, markViewed, clearViewed, unreadCount, markRead, noteText,
-  saveProfile, savePrefs, calm, allOrders, getOrder, orderTotal, orderCount, placeOrder,
+  saveProfile, savePrefs, calm, allOrders, getOrder, orderTotal, orderSubtotal, orderFee, orderCount, placeOrder,
+  paymentFee, feeLabel,
   deliveryType, credential, searchProducts, media, heartBtn, tile, toast, exportData, resetEverything,
   familyOf, familyVariants, familyLead, familyTile, regionOf, valueOf, topupMethod, FAMILY_CATS
-} from './core.js?v=20261123';
+} from './core.js?v=20261123b';
 
 /* Where a subcategory link goes: brands (gift cards, mobile games) open their
    product page, where region and value are picked; others open the shop. */
@@ -621,6 +622,8 @@ function gameBlock({ key, method, name, p }) {
 
 const contactOk = pr => pr.name?.trim().length >= 2 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pr.email || '') && (pr.phone || '').replace(/\D/g, '').length >= 8;
 
+let chosenPayment = PAYMENT_METHODS[0];    // kept when the basket re-renders the page
+
 const checkout = {
   title: () => t('co.title'),
   rerenderOn: ['cart'],
@@ -632,6 +635,8 @@ const checkout = {
     const games = topupGroups(ids);
     const pr = state.profile;
     const filled = contactOk(pr);
+    const pay = PAYMENT_METHODS.includes(chosenPayment) ? chosenPayment : PAYMENT_METHODS[0];
+    const sub = cartTotal(), fee = paymentFee(pay, sub);
     let step = 1;
     return `
       <div class="page">
@@ -666,14 +671,14 @@ const checkout = {
             <div class="pay-options" role="radiogroup" aria-label="${esc(t('co.paymentLabel'))}">
               ${PAYMENT_METHODS.map((m, i) => `
                 <label class="pay-option${m === 'clictopay' ? ' pay-main' : ''}">
-                  <input type="radio" name="payment" value="${m}" ${i === 0 ? 'checked' : ''}>
-                  <span><b>${esc(t('pay.' + m))}</b><small>${esc(t('pay.' + m + 'D'))}</small></span>
+                  <input type="radio" name="payment" value="${m}" ${m === pay ? 'checked' : ''}>
+                  <span><b>${esc(t('pay.' + m))} <em class="pay-fee" dir="ltr">${esc(feeLabel(m))}</em></b><small>${esc(t('pay.' + m + 'D'))}</small></span>
                   ${m === 'clictopay' ? `<span class="pay-brands" aria-hidden="true"><i>VISA</i><i>MC</i><i>CIB</i><i>e-DINAR</i></span>` : ''}
                 </label>`).join('')}
             </div>
             <label class="check"><input type="checkbox" id="terms"><span>${esc(t('co.terms'))}</span></label>
             <span class="msg" id="termsMsg" aria-live="polite"></span>
-            <button class="btn btn-solid btn-wide" type="submit">${esc(t('co.place', { total: tnd(cartTotal()) }))}</button>
+            <button class="btn btn-solid btn-wide" type="submit" id="placeBtn">${esc(t('co.place', { total: tnd(sub + fee) }))}</button>
           </form>
 
           <aside class="card summary" aria-label="${esc(t('co.summary'))}">
@@ -691,9 +696,10 @@ const checkout = {
                   <span class="line-total">${tnd(p.price * q)}</span>
                 </div>`; }).join('')}
             </div>
-            <div class="sum-row"><span>${esc(t('co.subtotal'))}</span><span>${tnd(cartTotal())}</span></div>
+            <div class="sum-row"><span>${esc(t('co.subtotal'))}</span><span>${tnd(sub)}</span></div>
+            <div class="sum-row fee-row"><span id="feeLabel">${esc(t('co.fee.' + pay))} <em dir="ltr">${esc(feeLabel(pay))}</em></span><span id="feeAmt">${tnd(fee)}</span></div>
             <div class="sum-row"><span>${esc(t('co.delivery'))}</span><span>${esc(t('co.free'))}</span></div>
-            <div class="sum-row total-row"><span>${esc(t('co.total'))}</span><b>${tnd(cartTotal())}</b></div>
+            <div class="sum-row total-row"><span>${esc(t('co.total'))}</span><b id="grandTotal">${tnd(Math.round((sub + fee) * 1000) / 1000)}</b></div>
           </aside>
         </div>
         <div class="redirect" id="redirect" hidden role="status">
@@ -717,6 +723,17 @@ const checkout = {
         pw.setAttribute('aria-pressed', String(show));
         pw.setAttribute('aria-label', t(show ? 'acc.hide' : 'acc.show'));
       }
+    });
+    // the fee line and totals follow the chosen payment method
+    form.addEventListener('change', e => {
+      if (e.target.name !== 'payment') return;
+      chosenPayment = e.target.value;
+      const sub = cartTotal(), fee = paymentFee(chosenPayment, sub), total = Math.round((sub + fee) * 1000) / 1000;
+      $('#feeLabel', el).innerHTML = `${esc(t('co.fee.' + chosenPayment))} <em dir="ltr">${esc(feeLabel(chosenPayment))}</em>`;
+      $('#feeAmt', el).textContent = tnd(fee);
+      $('#grandTotal', el).textContent = tnd(total);
+      $('#placeBtn', el).textContent = t('co.place', { total: tnd(total) });
+      for (const n of [$('#feeAmt', el), $('#grandTotal', el)]) { n.classList.remove('bump'); void n.offsetWidth; n.classList.add('bump'); }
     });
     const openContact = () => {
       $('#contactCard', el).hidden = true;
@@ -840,6 +857,8 @@ const order = {
             ${o.playerId ? `<div class="sum-row"><span>${esc(t('ord.player'))}</span><span dir="ltr">${esc(o.playerId)}</span></div>` : ''}
             ${Object.entries(o.accounts || {}).map(([key, a]) => `<div class="sum-row"><span>${esc(byId[key]?.short || subLabel(key))}</span>
               <span dir="ltr">${esc(a.email ? [a.email, a.uid && 'UID ' + a.uid, a.platform && t('acc.' + a.platform)].filter(Boolean).join(' · ') : a.playerId)}</span></div>`).join('')}
+            <div class="sum-row"><span>${esc(t('co.subtotal'))}</span><span>${tnd(orderSubtotal(o))}</span></div>
+            <div class="sum-row fee-row"><span>${esc(t('co.fee.' + (o.payment === 'card' ? 'clictopay' : o.payment)))} <em dir="ltr">${esc(feeLabel(o.payment))}</em></span><span>${tnd(orderFee(o))}</span></div>
             <div class="sum-row total-row"><span>${esc(t('co.total'))}</span><b>${tnd(orderTotal(o))}</b></div>
             <a class="btn btn-ghost btn-wide" href="#/support">${esc(t('ord.help'))}</a>
           </aside>

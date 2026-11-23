@@ -3,14 +3,14 @@
    hash router. Pages live in views.js; state and helpers in core.js;
    wording in i18n.js. */
 
-import { CATEGORIES, NOTIFICATIONS } from './data.js?v=20261123';
-import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js?v=20261123';
+import { CATEGORIES, NOTIFICATIONS } from './data.js?v=20261123b';
+import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js?v=20261123b';
 import {
   $, $$, byId, tnd, esc, avatarSrc, go, ICON, state, on,
   cartQty, cartTotal, setQty, addToCart, toggleWish, unreadCount, markRead, noteText,
   applyPrefs, searchProducts, media, fitAll, toast, catLabel, subLabel, subsOf, familyLead, FAMILY_CATS
-} from './core.js?v=20261123';
-import { VIEWS } from './views.js?v=20261123';
+} from './core.js?v=20261123b';
+import { VIEWS } from './views.js?v=20261123b';
 
 applyLang();
 applyPrefs();

@@ -937,6 +937,14 @@ export const ORDERS_SEED = [
    CIB, e-Dinar). D17 and bank transfer are common in Tunisia — confirm with the store. */
 export const PAYMENT_METHODS = ['clictopay', 'd17', 'transfer'];   // names in i18n.js
 
+/* What each method adds to the order: a percentage of the subtotal, or a flat
+   amount in dinars. Shown on the option and as its own line in the summary. */
+export const PAYMENT_FEES = {
+  clictopay: { pct: 2.5 },   // bank fees
+  d17:       { pct: 1 },
+  transfer:  { flat: 5 }
+};
+
 /* How each mobile game is topped up. Some publishers credit by player ID;
    others need the shopper's game login so the store can sign in and buy.
      loginFull — email + password + UID + Android/iOS

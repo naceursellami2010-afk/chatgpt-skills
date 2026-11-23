@@ -1,8 +1,8 @@
 /* TechGarage demo — shared state, store actions and UI primitives.
    Everything a page needs lives here so the views stay declarative. */
 
-import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, TOPUP_METHOD } from './data.js?v=20261123';
-import { t, plural, price, date, word, blurb } from './i18n.js?v=20261123';
+import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, TOPUP_METHOD, PAYMENT_FEES } from './data.js?v=20261123b';
+import { t, plural, price, date, word, blurb, num } from './i18n.js?v=20261123b';
 
 /* ── helpers ───────────────────────────────────────────────────────── */
 export const $  = (s, r = document) => r.querySelector(s);
@@ -140,6 +140,20 @@ export const emit = ev => subs[ev]?.forEach(fn => fn());
 export const cartQty   = () => Object.values(state.cart).reduce((a, b) => a + b, 0);
 export const cartTotal = () => Object.entries(state.cart).reduce((s, [id, q]) => s + byId[id].price * q, 0);
 
+/* ── payment fees ─────────────────────────────────────────────────────
+   The dinar has 1000 millimes, so fees are kept to three decimals. */
+const roundMillimes = n => Math.round(n * 1000) / 1000;
+const feeRule = method => PAYMENT_FEES[method === 'card' ? 'clictopay' : method] || {};
+export const paymentFee = (method, subtotal) => {
+  const r = feeRule(method);
+  return roundMillimes(r.pct ? subtotal * r.pct / 100 : r.flat || 0);
+};
+/** "+2.5%" or "+5 DT" — the label on each payment option. */
+export const feeLabel = method => {
+  const r = feeRule(method);
+  return r.pct ? `+${num(r.pct)}%` : r.flat ? `+${price(r.flat)}` : '';
+};
+
 export function addToCart(id, qty = 1, fromImg = null) {
   state.cart[id] = Math.min((state.cart[id] || 0) + qty, 10);
   save('tg.cart', state.cart);
@@ -231,7 +245,9 @@ const normalise = o => {
 
 export const allOrders = () => [...state.orders, ...ORDERS_SEED].map(normalise).sort((a, b) => b.date - a.date);
 export const getOrder  = id => allOrders().find(o => o.id === id);
-export const orderTotal = o => o.items.reduce((s, [id, q]) => s + byId[id].price * q, 0);
+export const orderSubtotal = o => o.items.reduce((s, [id, q]) => s + byId[id].price * q, 0);
+export const orderFee = o => paymentFee(o.payment, orderSubtotal(o));
+export const orderTotal = o => roundMillimes(orderSubtotal(o) + orderFee(o));
 export const orderCount = o => o.items.reduce((s, [, q]) => s + q, 0);
 
 /** Game account details for one order. Passwords are dropped here — they

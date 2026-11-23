@@ -2395,3 +2395,10 @@ html[dir='rtl'] .contact-card .txt span[dir] { text-align: end; }
   .contact-card { flex-wrap: wrap; }
   .pay-brands { display: none; }
 }
+
+/* payment fees: shown on each option and as a line in the summary */
+.pay-fee { font-style: normal; font-size: 13px; font-weight: 600; color: var(--teal-ink); margin-inline-start: 6px; unicode-bidi: isolate; }
+.fee-row em { font-style: normal; color: var(--ink-50); font-size: 13px; unicode-bidi: isolate; }
+.bump { display: inline-block; animation: bump 320ms var(--swift); }
+@keyframes bump { 40% { color: var(--teal-ink); transform: scale(1.06); } }
+.sum-row b, .sum-row span { font-variant-numeric: tabular-nums; }

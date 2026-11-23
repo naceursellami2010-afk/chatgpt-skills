@@ -80,7 +80,7 @@ const STR = {
     'err.player': 'Enter the numeric player ID from your game profile.', 'err.terms': 'Please accept the terms to continue.',
     'pay.card': 'Bank card', 'pay.cardD': 'Visa, Mastercard or a Tunisian e-Dinar card', 'pay.d17': 'D17', 'pay.d17D': 'Pay from the D17 app',
     'pay.transfer': 'Bank transfer', 'pay.transferD': 'Delivered once the transfer arrives',
-    'pay.clictopay': 'Bank card · ClicToPay', 'pay.clictopayD': 'Visa, Mastercard, CIB or e-Dinar — on the secure ClicToPay page',
+    'co.fee.clictopay': 'Bank fees', 'co.fee.d17': 'D17 fee', 'co.fee.transfer': 'Transfer fee', 'pay.clictopay': 'Bank card · ClicToPay', 'pay.clictopayD': 'Visa, Mastercard, CIB or e-Dinar — on the secure ClicToPay page',
     'co.redirect': 'Opening the secure ClicToPay page…', 'co.redirectD': 'Demo — no card is charged.',
     'co.fromAccount': 'Filled in from your account', 'co.edit': 'Edit', 'co.done': 'Done', 'co.saveToAccount': 'Save these details to my account',
     'co.games': 'Game accounts', 'co.gamesD': 'Each game is topped up its own way — one block per game.', 'co.remembered': 'Filled in from your last order',
@@ -220,7 +220,7 @@ const STR = {
     'err.player': 'Saisissez l’identifiant numérique de votre profil de jeu.', 'err.terms': 'Veuillez accepter les conditions pour continuer.',
     'pay.card': 'Carte bancaire', 'pay.cardD': 'Visa, Mastercard ou carte e-Dinar', 'pay.d17': 'D17', 'pay.d17D': 'Payez depuis l’application D17',
     'pay.transfer': 'Virement bancaire', 'pay.transferD': 'Livré à réception du virement',
-    'pay.clictopay': 'Carte bancaire · ClicToPay', 'pay.clictopayD': 'Visa, Mastercard, CIB ou e-Dinar — sur la page sécurisée ClicToPay',
+    'co.fee.clictopay': 'Frais bancaires', 'co.fee.d17': 'Frais D17', 'co.fee.transfer': 'Frais de virement', 'pay.clictopay': 'Carte bancaire · ClicToPay', 'pay.clictopayD': 'Visa, Mastercard, CIB ou e-Dinar — sur la page sécurisée ClicToPay',
     'co.redirect': 'Ouverture de la page sécurisée ClicToPay…', 'co.redirectD': 'Démo — aucune carte n’est débitée.',
     'co.fromAccount': 'Rempli depuis votre compte', 'co.edit': 'Modifier', 'co.done': 'Terminé', 'co.saveToAccount': 'Enregistrer ces infos dans mon compte',
     'co.games': 'Comptes de jeu', 'co.gamesD': 'Chaque jeu se recharge à sa façon — un bloc par jeu.', 'co.remembered': 'Rempli depuis votre dernière commande',
@@ -360,7 +360,7 @@ const STR = {
     'err.player': 'أدخل المعرّف الرقمي من ملفك في اللعبة.', 'err.terms': 'يرجى الموافقة على الشروط للمتابعة.',
     'pay.card': 'بطاقة بنكية', 'pay.cardD': 'Visa أو Mastercard أو بطاقة e-Dinar', 'pay.d17': 'D17', 'pay.d17D': 'ادفع من تطبيق D17',
     'pay.transfer': 'تحويل بنكي', 'pay.transferD': 'يُسلَّم عند وصول التحويل',
-    'pay.clictopay': 'بطاقة بنكية · ClicToPay', 'pay.clictopayD': 'Visa أو Mastercard أو CIB أو e-Dinar — عبر صفحة ClicToPay الآمنة',
+    'co.fee.clictopay': 'رسوم بنكية', 'co.fee.d17': 'رسوم D17', 'co.fee.transfer': 'رسوم التحويل', 'pay.clictopay': 'بطاقة بنكية · ClicToPay', 'pay.clictopayD': 'Visa أو Mastercard أو CIB أو e-Dinar — عبر صفحة ClicToPay الآمنة',
     'co.redirect': 'جارٍ فتح صفحة ClicToPay الآمنة…', 'co.redirectD': 'نسخة تجريبية — لا يتم خصم أي مبلغ.',
     'co.fromAccount': 'مُعبّأ من حسابك', 'co.edit': 'تعديل', 'co.done': 'تم', 'co.saveToAccount': 'حفظ هذه البيانات في حسابي',
     'co.games': 'حسابات الألعاب', 'co.gamesD': 'لكل لعبة طريقة شحن خاصة — خانة لكل لعبة.', 'co.remembered': 'مُعبّأ من طلبك السابق',
@@ -652,9 +652,15 @@ export function plural(key, n) {
 }
 
 /** Prices are whole dinars: "180 DT" in English and French, "180 د.ت" in Arabic. */
-export const price = n => activeLang === 'ar'
-  ? `${n.toLocaleString('en-US')} د.ت`
-  : `${n.toLocaleString(activeLang === 'fr' ? 'fr-FR' : 'en-US')} DT`;
+export const price = n => {
+  // whole dinars as "180 DT"; amounts with millimes (payment fees) as "393.90 DT"
+  const opts = Number.isInteger(n) ? {} : { minimumFractionDigits: 2, maximumFractionDigits: 3 };
+  return activeLang === 'ar'
+    ? `${n.toLocaleString('en-US', opts)} د.ت`
+    : `${n.toLocaleString(activeLang === 'fr' ? 'fr-FR' : 'en-US', opts)} DT`;
+};
+/** Plain numbers in the same style as prices (French comma, Latin digits elsewhere). */
+export const num = n => n.toLocaleString(activeLang === 'fr' ? 'fr-FR' : 'en-US');
 
 export const date = ts => new Date(ts).toLocaleDateString(langInfo().locale, {
   day: 'numeric', month: 'short', year: 'numeric', numberingSystem: 'latn'

@@ -114,6 +114,12 @@ ClicToPay page" step that stands in for the bank's page — no card details are 
 for here. D17 and bank transfer are also offered; confirm with the store which it accepts
 and edit `PAYMENT_METHODS` in `data.js`.
 
+Each method adds its own fee (`PAYMENT_FEES` in `data.js`): **ClicToPay +2.5%** bank
+fees, **D17 +1%**, **bank transfer +5 DT**. The fee shows on each option and as its own
+line in the order summary; the line, the total and the Place order button update the
+moment the method changes, and the order page keeps the same breakdown. Fees are kept to
+millimes, so amounts with a fee read like `399.75 DT`.
+
 ## Languages
 
 English, French and Arabic, chosen from the globe button in the top bar or in
