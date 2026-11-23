@@ -76,7 +76,9 @@ refresh and the browser's Back button all work.
 | Notifications | `#/notifications` | All notifications, mark as read |
 | Store admin | `#/admin`, `#/admin/products`, `#/admin/sections`, `#/admin/product/<id>` | Categories and subcategories, products, and what every page section shows (see below) |
 
-The shell around them: an icon rail (store, wishlist, basket, profile, settings), the
+The shell around them: a sidebar with Feather icons and labels on wide screens (store, wishlist,
+basket, orders, profile, store admin, settings — foldable to icons, remembered; icons only on
+tablets; a labelled five-item dock on phones), the
 category tabs, search, notifications, the account menu and a slide-out basket.
 
 Everything you do — basket, wishlist, orders, profile, settings, history — is saved in

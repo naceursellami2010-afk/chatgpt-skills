@@ -3,17 +3,17 @@
    hash router. Pages live in views.js; state and helpers in core.js;
    wording in i18n.js. */
 
-import { CATEGORIES, NOTIFICATIONS } from './data.js?v=20261124m';
-import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js?v=20261124m';
+import { CATEGORIES, NOTIFICATIONS } from './data.js?v=20261124o';
+import { LANGS, t, lang, langInfo, setLang, onLang, applyLang } from './i18n.js?v=20261124o';
 import {
   $, $$, byId, tnd, esc, avatarSrc, go, ICON, state, on,
   cartQty, cartTotal, setQty, addToCart, toggleWish, unreadCount, markRead, noteText,
   applyPrefs, searchProducts, media, fitAll, toast, catLabel, subLabel, subsOf, familyLead, FAMILY_CATS
-} from './core.js?v=20261124m';
-import { VIEWS } from './views.js?v=20261124m';
-import { admin } from './admin.js?v=20261124m';
-import { canMorph, motionOn, introduce, revealOnScroll, tiltCards } from './motion.js?v=20261124m';
-import { glassSelects, closeGlassSelect } from './glass-select.js?v=20261124m';
+} from './core.js?v=20261124o';
+import { VIEWS } from './views.js?v=20261124o';
+import { admin } from './admin.js?v=20261124o';
+import { canMorph, motionOn, introduce, revealOnScroll, tiltCards } from './motion.js?v=20261124o';
+import { glassSelects, closeGlassSelect } from './glass-select.js?v=20261124o';
 
 VIEWS.admin = admin;
 
@@ -289,7 +289,26 @@ on('wish', () => $$('[data-wish]').forEach(b => {
    ══════════════════════════════════════════════════════════════════════ */
 $$('.rail-btn[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
 
-const RAIL_FOR = { home: 'home', wishlist: 'wishlist', profile: 'account', orders: 'account', order: 'account', settings: 'settings' };
+const RAIL_FOR = { home: 'home', wishlist: 'wishlist', profile: 'account', orders: 'orders', order: 'orders', settings: 'settings', admin: 'admin' };
+
+/* The sidebar shows icons with labels on wide screens; its last button folds it
+   to icons only, and the choice is remembered. */
+const railToggle = $('#railToggle');
+function applyRail(collapsed) {
+  document.documentElement.classList.toggle('rail-collapsed', collapsed);
+  railToggle.setAttribute('aria-pressed', String(collapsed));
+  const key = collapsed ? 'rail.expand' : 'rail.collapse';
+  railToggle.setAttribute('aria-label', t(key));
+  railToggle.dataset.i18nAttr = `aria-label:${key}`;
+  railToggle.querySelector('.rail-label').dataset.i18n = key;
+  railToggle.querySelector('.rail-label').textContent = t(key);
+}
+applyRail((() => { try { return localStorage.getItem('tg.railCollapsed') === '1'; } catch { return false; } })());
+railToggle.addEventListener('click', () => {
+  const next = !document.documentElement.classList.contains('rail-collapsed');
+  applyRail(next);
+  try { localStorage.setItem('tg.railCollapsed', next ? '1' : '0'); } catch {}
+});
 function setRail(name) {
   $$('.rail-btn').forEach(b => b.setAttribute('aria-current', String(b.dataset.rail === RAIL_FOR[name])));
 }

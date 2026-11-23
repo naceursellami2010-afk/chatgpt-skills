@@ -326,7 +326,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   grid-template-columns: minmax(230px, 310px) 1fr auto;
   align-items: center;
   gap: 16px;
-  padding-inline-start: 72px;
+  padding-inline-start: var(--rail-room, 72px);
   animation: fade-up 760ms 120ms var(--expo) both;
 }
 
@@ -564,7 +564,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   position: relative;
   z-index: 1;
   min-height: 0;
-  padding-inline-start: 72px;
+  padding-inline-start: var(--rail-room, 72px);
   margin-inline-end: -10px;
   padding-inline-end: 10px;
   overflow-y: auto;
@@ -3020,3 +3020,67 @@ html[dir='rtl'] .adm-back svg { transform: none; }
 .key-list .cred-actions { display: flex; gap: 6px; align-items: center; }
 .adm-toolbar .chip-row { flex-wrap: wrap; }
 .adm-back { align-self: flex-start; margin-inline-start: 0 !important; }
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   23. Sidebar — Feather icons with labels on wide screens, icons only when
+       folded or on tablets, a labelled dock on phones
+   ══════════════════════════════════════════════════════════════════════ */
+.rail-label, .rail-title, .rail-sep, .rail-toggle { display: none; }
+.rail-btn svg { flex: none; }
+
+@media (min-width: 1180px) {
+  html:not(.rail-collapsed) { --rail-room: 222px; }
+  html:not(.rail-collapsed) .rail {
+    width: 196px; padding: 14px 10px; gap: 4px; border-radius: 26px;
+    background: linear-gradient(180deg, rgba(52, 55, 66, .5), rgba(30, 32, 40, .5));
+  }
+  html:not(.rail-collapsed) .rail-title {
+    display: block; margin: 2px 12px 8px; font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-70);
+  }
+  html[lang='ar']:not(.rail-collapsed) .rail-title { letter-spacing: 0; text-transform: none; font-size: 13px; }
+  html:not(.rail-collapsed) .rail-btn {
+    width: 100%; height: 44px; display: flex; align-items: center; justify-content: flex-start; gap: 12px;
+    padding: 0 12px; border-radius: 14px; color: var(--ink-80);
+  }
+  html:not(.rail-collapsed) .rail-btn:hover { transform: none; background: rgba(255, 255, 255, .1); }
+  html:not(.rail-collapsed) .rail-btn[aria-current='true'] { color: var(--on-light); }
+  html:not(.rail-collapsed) .rail-label { display: block; flex: 1; min-width: 0; font-size: 15px; font-weight: 500; text-align: start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  html:not(.rail-collapsed) .rail-btn[aria-current='true'] .rail-label { font-weight: 600; }
+  html:not(.rail-collapsed) .rail-btn .tip { display: none; }
+  html:not(.rail-collapsed) .rail-count { position: static; transform: scale(0); margin-inline-start: auto; }
+  html:not(.rail-collapsed) .rail-count.on { transform: scale(1); }
+  html:not(.rail-collapsed) .rail-sep { display: block; height: 1px; margin: 8px 10px; background: var(--edge-soft); }
+  .rail-toggle {
+    display: flex; align-items: center; gap: 12px; height: 40px; margin-top: 8px; padding: 0 12px; border-radius: 12px;
+    color: var(--ink-70); font-size: 13px; width: 100%;
+  }
+  .rail-toggle:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+  html:not(.rail-collapsed) .rail-toggle .rail-label { font-size: 13px; font-weight: 500; }
+  html.rail-collapsed .rail-toggle { width: 42px; height: 42px; padding: 0; justify-content: center; margin-top: 4px; border-radius: 50%; }
+  html.rail-collapsed .rail-toggle svg { transform: rotate(180deg); }
+  [dir='rtl'] .rail-toggle svg { transform: rotate(180deg); }
+  html.rail-collapsed[dir='rtl'] .rail-toggle svg { transform: none; }
+  .rail-toggle svg { transition: transform .3s var(--out-expo); }
+}
+/* tablets and folded sidebar: icons only, the extra items stay reachable too */
+@media (max-width: 1179px) {
+  .rail-extra.rail-btn { display: grid; }
+}
+/* phones: a dock of the five main items, each with a small label */
+@media (max-width: 760px) {
+  .rail-extra { display: none !important; }
+  .rail { gap: 2px; padding: 6px 8px; border-radius: 24px; }
+  .rail-btn { width: 58px; height: 52px; border-radius: 16px; display: flex; flex-direction: column; gap: 3px; justify-content: center; align-items: center; }
+  .rail-btn .rail-label { display: block; font-size: 11px; font-weight: 600; line-height: 1; letter-spacing: 0; }
+  .rail-btn svg { width: 18px; height: 18px; }
+  .rail-count { top: 3px; inset-inline-end: 8px; }
+}
+/* with the wide sidebar the top bar is narrower: names stay on one line, search gives way first */
+#accountName, #accountHandle { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; display: block; }
+@media (min-width: 1180px) {
+  html:not(.rail-collapsed) .topbar { grid-template-columns: minmax(170px, 310px) 1fr auto; }
+}
+@media (min-width: 1180px) and (max-width: 1480px) {
+  html:not(.rail-collapsed) #accountHandle { display: none; }
+}

@@ -24,7 +24,7 @@ const STR = {
 
     'search.ph': 'Search the store', 'search.label': 'Search products', 'search.results': 'Search results',
     'search.empty': 'Nothing matches “{q}”.', 'search.seeAll': 'See all results ({n})',
-    'rail.sections': 'Sections', 'rail.store': 'Store', 'rail.wishlist': 'Wishlist', 'rail.basket': 'Basket', 'rail.profile': 'Profile', 'rail.settings': 'Settings',
+     'rail.menu': "Menu", 'rail.orders': "Orders", 'rail.admin': "Store admin", 'rail.collapse': "Collapse menu", 'rail.expand': "Expand menu", 'rail.sections': 'Sections', 'rail.store': 'Store', 'rail.wishlist': 'Wishlist', 'rail.basket': 'Basket', 'rail.profile': 'Profile', 'rail.settings': 'Settings',
     'bell': 'Notifications', 'notif.viewAll': 'View all notifications',
     'menu.profile': 'Profile', 'menu.orders': 'Orders', 'menu.wishlist': 'Wishlist', 'menu.settings': 'Settings', 'menu.support': 'Support', 'menu.signout': 'Sign out',
     'toast.signout': 'Signing out isn’t part of this demo',
@@ -259,7 +259,7 @@ const STR = {
 
     'search.ph': 'Rechercher dans la boutique', 'search.label': 'Rechercher des produits', 'search.results': 'Résultats de recherche',
     'search.empty': 'Aucun résultat pour « {q} ».', 'search.seeAll': 'Voir tous les résultats ({n})',
-    'rail.sections': 'Sections', 'rail.store': 'Boutique', 'rail.wishlist': 'Favoris', 'rail.basket': 'Panier', 'rail.profile': 'Profil', 'rail.settings': 'Réglages',
+     'rail.menu': "Menu", 'rail.orders': "Commandes", 'rail.admin': "Administration", 'rail.collapse': "Réduire le menu", 'rail.expand': "Agrandir le menu", 'rail.sections': 'Sections', 'rail.store': 'Boutique', 'rail.wishlist': 'Favoris', 'rail.basket': 'Panier', 'rail.profile': 'Profil', 'rail.settings': 'Réglages',
     'bell': 'Notifications', 'notif.viewAll': 'Voir toutes les notifications',
     'menu.profile': 'Profil', 'menu.orders': 'Commandes', 'menu.wishlist': 'Favoris', 'menu.settings': 'Réglages', 'menu.support': 'Assistance', 'menu.signout': 'Se déconnecter',
     'toast.signout': 'La déconnexion ne fait pas partie de cette démo',
@@ -494,7 +494,7 @@ const STR = {
 
     'search.ph': 'ابحث في المتجر', 'search.label': 'البحث عن المنتجات', 'search.results': 'نتائج البحث',
     'search.empty': 'لا توجد نتائج لـ «{q}».', 'search.seeAll': 'عرض كل النتائج ({n})',
-    'rail.sections': 'الأقسام', 'rail.store': 'المتجر', 'rail.wishlist': 'المفضلة', 'rail.basket': 'السلة', 'rail.profile': 'الملف الشخصي', 'rail.settings': 'الإعدادات',
+     'rail.menu': "القائمة", 'rail.orders': "الطلبات", 'rail.admin': "إدارة المتجر", 'rail.collapse': "طيّ القائمة", 'rail.expand': "توسيع القائمة", 'rail.sections': 'الأقسام', 'rail.store': 'المتجر', 'rail.wishlist': 'المفضلة', 'rail.basket': 'السلة', 'rail.profile': 'الملف الشخصي', 'rail.settings': 'الإعدادات',
     'bell': 'الإشعارات', 'notif.viewAll': 'عرض كل الإشعارات',
     'menu.profile': 'الملف الشخصي', 'menu.orders': 'الطلبات', 'menu.wishlist': 'المفضلة', 'menu.settings': 'الإعدادات', 'menu.support': 'المساعدة', 'menu.signout': 'تسجيل الخروج',
     'toast.signout': 'تسجيل الخروج غير متاح في هذا العرض التجريبي',
