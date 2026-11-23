@@ -147,7 +147,7 @@ slides.forEach((p, i) => {
       <p>${esc(p.blurb)}</p>
       <div class="price-line">
         <span class="now">${tnd(p.price)}</span>
-        <span class="note">${p.cat === 'keys' || p.cat === 'cards' ? 'Instant delivery' : 'In stock in Mahdia'}</span>
+        <span class="note">${p.cat === 'mobile' ? 'Credited in minutes' : 'Instant delivery'}</span>
       </div>
       <div class="slide-cta">
         <button class="btn btn-solid" data-buy="${p.id}">${ICON.bolt} Buy now</button>
@@ -292,7 +292,7 @@ function renderShelf() {
   $('#shelf').innerHTML = items.map((p, i) => `
     <article class="tile" data-view="${p.id}" style="--d:${i * 55}ms">
       ${shot(p)}
-      <span class="tile-tag">${esc(p.badge || p.tags[0])}</span>
+      <span class="tile-tag">${esc(p.badge || p.tags[1] || p.tags[0])}</span>
       <div class="tile-body">
         <div class="txt">
           <h3>${esc(p.short)}</h3>
@@ -323,10 +323,17 @@ function search() {
   cursor = -1;
   if (!q) { results.classList.remove('open'); input.setAttribute('aria-expanded', 'false'); return; }
 
-  const hits = PRODUCTS.filter(p =>
-    p.name.toLowerCase().includes(q) ||
-    p.tags.join(' ').toLowerCase().includes(q)
-  ).slice(0, 7);
+  /* Rank by where the query hit: the name we display first, then tags, then
+     the long store title — otherwise "steam" surfaces every Fresh Steam
+     Account ahead of the actual Steam Wallet cards. */
+  const rank = p =>
+    p.short.toLowerCase().includes(q) ? 0 :
+    p.tags.join(' ').toLowerCase().includes(q) ? 1 :
+    p.name.toLowerCase().includes(q) ? 2 : -1;
+  const hits = PRODUCTS
+    .map(p => [rank(p), p]).filter(([r]) => r >= 0)
+    .sort((x, y) => x[0] - y[0]).map(([, p]) => p)
+    .slice(0, 7);
 
   results.innerHTML = hits.length
     ? hits.map(p => `
@@ -546,11 +553,6 @@ $$('.rail-btn').forEach(b => b.addEventListener('click', () => {
   if (copy) toast(copy);
 }));
 
-/* chrome reload */
-$('#reload').addEventListener('click', function () {
-  this.classList.add('spinning');
-  setTimeout(() => this.classList.remove('spinning'), 640);
-});
 
 /* ══════════════════════════════════════════════════════════════════════
    Toasts
