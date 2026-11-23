@@ -18,6 +18,8 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+# Links carry ?v=<date> so browsers fetch fresh files after an update; bump it in
+# index.html and the module imports when shipping changes.
 MODULES = ["data.js", "i18n.js", "core.js", "views.js", "app.js"]   # dependency order
 
 
@@ -58,9 +60,9 @@ def main() -> None:
     assert n_av >= 1, "avatar path template not found"
     script = lookup + script
 
-    html = html.replace('<link rel="stylesheet" href="assets/css/app.css">', f"<style>\n{css}\n</style>")
-    html = html.replace('<script type="module" src="assets/js/app.js"></script>',
-                        f'<script type="module">\n{script}\n</script>')
+    html = re.sub(r'<link rel="stylesheet" href="assets/css/app.css(?:\?v=\w+)?">', lambda _: f"<style>\n{css}\n</style>", html)
+    html = re.sub(r'<script type="module" src="assets/js/app.js(?:\?v=\w+)?"></script>',
+                  lambda _: f'<script type="module">\n{script}\n</script>', html)
 
     leftovers = re.findall(r"assets/(?:products|avatars|css|js)/[\w.\-]+", html)
     assert not leftovers, f"unresolved asset references: {leftovers[:5]}"

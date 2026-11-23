@@ -1,8 +1,8 @@
 /* TechGarage demo — shared state, store actions and UI primitives.
    Everything a page needs lives here so the views stay declarative. */
 
-import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, TOPUP_METHOD } from './data.js';
-import { t, plural, price, date, word, blurb } from './i18n.js';
+import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, TOPUP_METHOD } from './data.js?v=20261123';
+import { t, plural, price, date, word, blurb } from './i18n.js?v=20261123';
 
 /* ── helpers ───────────────────────────────────────────────────────── */
 export const $  = (s, r = document) => r.querySelector(s);
