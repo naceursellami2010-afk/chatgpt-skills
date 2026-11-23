@@ -2,8 +2,8 @@
    Everything a page needs lives here so the views stay declarative. */
 
 import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, TOPUP_METHOD, PAYMENT_FEES,
-         RETIRED, CAT_NAMES, ADMIN_KEY, PAGE_SECTIONS, applyAdmin } from './data.js?v=20261124k';
-import { t, plural, price, date, word, blurb, num, lang } from './i18n.js?v=20261124k';
+         RETIRED, CAT_NAMES, ADMIN_KEY, PAGE_SECTIONS, applyAdmin } from './data.js?v=20261124m';
+import { t, plural, price, date, word, blurb, num, lang } from './i18n.js?v=20261124m';
 
 /* ── helpers ───────────────────────────────────────────────────────── */
 export const $  = (s, r = document) => r.querySelector(s);
@@ -183,8 +183,99 @@ export const feeLabel = method => {
   return r.pct ? `+${num(r.pct)}%` : r.flat ? `+${price(r.flat)}` : '';
 };
 
+/* ══════════════════════════════════════════════════════════════════════
+   Key & code stock
+   The store owner pastes each product's keys (gift-card codes, game keys,
+   account logins as email:password) into the admin. When a payment succeeds,
+   every item takes its keys from stock, oldest first, and the order shows the
+   real code. A product with keys in stock is "tracked": it can't be bought
+   past what's left. Untracked products keep the demo codes.
+   Demo note: the stock lives in this browser (localStorage "tg.stock"); a real
+   store keeps it on the server and assigns keys from its payment webhook.
+   ══════════════════════════════════════════════════════════════════════ */
+export const STOCK_KEY = 'tg.stock';
+export const LOW_STOCK = 3;
+export const stock = load(STOCK_KEY, {});           // { productId: [{ code, added, order?, soldAt? }] }
+const saveStock = () => save(STOCK_KEY, stock);
+
+/** Which products take keys from stock (everything but top-ups, which are credited to the game). */
+export const usesKeys = p => !!p && deliveryType(p) !== 'topup';
+export function stockOf(id) {
+  const list = stock[id] || [];
+  const available = list.filter(k => !k.order).length;
+  return { tracked: list.length > 0, available, sold: list.length - available, total: list.length };
+}
+/** 'untracked' | 'in' | 'low' | 'out' */
+export function stockState(id) {
+  const s = stockOf(id);
+  return !s.tracked || !usesKeys(byId[id]) ? 'untracked' : s.available === 0 ? 'out' : s.available <= LOW_STOCK ? 'low' : 'in';
+}
+/** The most of one product a shopper can have in the basket. */
+export const maxBuyable = id => (stockState(id) === 'untracked' ? 10 : Math.min(10, stockOf(id).available));
+
+function takeKeys(id, n, orderId) {
+  const free = (stock[id] || []).filter(k => !k.order).slice(0, n);
+  for (const k of free) { k.order = orderId; k.soldAt = Date.now(); }
+  return free.map(k => k.code);
+}
+
+/** Orders that were paid while a product ran out get their keys first, oldest order first. */
+function fillWaiting(id) {
+  let changed = false;
+  for (const o of [...state.orders].reverse()) {
+    const need = o.waiting?.[id];
+    if (!need) continue;
+    const got = takeKeys(id, need, o.id);
+    if (!got.length) break;
+    (o.keys ??= {})[id] = [...(o.keys[id] || []), ...got];
+    if (need - got.length) o.waiting[id] = need - got.length;
+    else delete o.waiting[id];
+    if (!Object.keys(o.waiting).length) { delete o.waiting; o.deliverAt = Date.now() + 1500; }
+    changed = true;
+  }
+  if (changed) { save('tg.orders', state.orders); emit('orders'); }
+}
+
+/** Add keys to a product's stock: one per line, blanks and duplicates skipped. */
+export function addKeys(id, raw) {
+  const all = new Set(Object.values(stock).flat().map(k => k.code));
+  const list = (stock[id] ??= []);
+  let added = 0, dupes = 0;
+  for (const line of raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean)) {
+    if (all.has(line)) { dupes++; continue; }
+    all.add(line); list.push({ code: line, added: Date.now() }); added++;
+  }
+  if (!list.length) delete stock[id];
+  fillWaiting(id);
+  saveStock();
+  emit('stock');
+  return { added, dupes };
+}
+/** Remove a key that hasn't been sold. */
+export function removeKey(id, code) {
+  const list = stock[id] || [];
+  const i = list.findIndex(k => k.code === code && !k.order);
+  if (i < 0) return false;
+  list.splice(i, 1);
+  if (!list.length) delete stock[id];
+  saveStock();
+  emit('stock');
+  return true;
+}
+/** Replace the whole stock (admin import). */
+export function replaceStock(next) {
+  for (const k of Object.keys(stock)) delete stock[k];
+  Object.assign(stock, next || {});
+  saveStock();
+  emit('stock');
+}
+
 export function addToCart(id, qty = 1, fromImg = null) {
-  state.cart[id] = Math.min((state.cart[id] || 0) + qty, 10);
+  const max = maxBuyable(id);
+  if (max <= 0) { toast(t('stock.outToast', { name: byId[id].short })); return; }
+  const want = (state.cart[id] || 0) + qty;
+  if (want > max) toast(t('stock.only', { n: max }));
+  state.cart[id] = Math.min(want, max);
   save('tg.cart', state.cart);
   emit('cart');
   if (fromImg) fly(fromImg, byId[id]);
@@ -194,7 +285,12 @@ export function addToCart(id, qty = 1, fromImg = null) {
 export function setQty(id, qty) {
   // anything that isn't a whole number of at least 1 removes the line
   if (!Number.isFinite(qty) || qty < 1) delete state.cart[id];
-  else state.cart[id] = Math.min(Math.floor(qty), 10);
+  else {
+    const max = maxBuyable(id);
+    if (Math.floor(qty) > max) toast(t('stock.only', { n: max }));
+    if (max <= 0) delete state.cart[id];
+    else state.cart[id] = Math.min(Math.floor(qty), max);
+  }
   save('tg.cart', state.cart);
   emit('cart');
 }
@@ -269,7 +365,7 @@ const DELIVERY_DELAY = 6000;  // a placed demo order "arrives" after a few secon
 
 const normalise = o => {
   const when = typeof o.date === 'number' ? o.date : Date.parse(o.date);
-  const status = o.status === 'processing' && o.deliverAt && Date.now() >= o.deliverAt ? 'delivered' : o.status;
+  const status = o.status === 'processing' && o.deliverAt && Date.now() >= o.deliverAt && !o.waiting ? 'delivered' : o.status;
   return { ...o, date: when, status };
 };
 
@@ -296,6 +392,15 @@ export function placeOrder({ name, email, phone, payment, accounts }) {
     payment, accounts: stripSecrets(accounts),
     contact: { name, email, phone }
   };
+  // payment succeeded: hand out real keys from stock
+  for (const [id, q] of order.items) {
+    if (stockState(id) === 'untracked' && !stock[id]?.length) continue;
+    if (!usesKeys(byId[id])) continue;
+    const got = takeKeys(id, q, order.id);
+    (order.keys ??= {})[id] = got;
+    if (got.length < q) (order.waiting ??= {})[id] = q - got.length;
+  }
+  if (order.keys) { saveStock(); emit('stock'); }
   state.orders.unshift(order);
   save('tg.orders', state.orders);
   clearCart();
@@ -329,6 +434,17 @@ const block = (rand, n) => Array.from({ length: n }, () => ALPHABET[rand()]).joi
 /** Demo credentials only — every one starts with DEMO and none is real. */
 export function credential(order, id) {
   const p = byId[id];
+  // keys from stock: the real one for this unit, or "on its way" if the stock ran out
+  if (order.keys?.[id] || order.waiting?.[id]) {
+    const type = deliveryType(p), code = order.keys?.[id]?.[order.unit || 0];
+    const label = t(type === 'account' ? 'cred.account' : type === 'code' ? 'cred.code' : 'cred.key');
+    if (!code) return { label, note: t('stock.preparing') };
+    if (type === 'account') {
+      const m = code.match(/^\s*([^:|\s]+)\s*[:|]\s*(.+)$/);
+      return m ? { label, login: m[1], secret: m[2].trim() } : { label, secret: code };
+    }
+    return { label, secret: code };
+  }
   const rand = seeded(order.id + ':' + id);
   switch (deliveryType(p)) {
     case 'account':
@@ -434,9 +550,9 @@ export const heartBtn = (p, cls = 'tile-heart') => {
 
 /** The product card used on every shelf and grid. */
 export const tile = (p, i = 0) => `
-  <article class="tile" data-view="${p.id}" style="--d:${Math.min(i, 12) * 45}ms;--vt:tile-${p.id}">
+  <article class="tile${stockState(p.id) === 'out' ? ' is-out' : ''}" data-view="${p.id}" style="--d:${Math.min(i, 12) * 45}ms;--vt:tile-${p.id}">
     ${media(p, 'shot')}
-    <span class="tile-tag">${esc(word(p.badge || p.tags[1] || p.tags[0]))}</span>
+    <span class="tile-tag">${esc(stockState(p.id) === 'out' ? t('stock.out') : word(p.badge || p.tags[1] || p.tags[0]))}</span>
     ${heartBtn(p)}
     <div class="tile-body">
       <div class="txt">
@@ -444,7 +560,7 @@ export const tile = (p, i = 0) => `
         <p>${esc(blurb(p))}</p>
         <span class="px">${tnd(p.price)}</span>
       </div>
-      <button class="round" data-add="${p.id}" aria-label="${esc(t('buy.addNamed', { name: p.short }))}">${ICON.plus}</button>
+      ${stockState(p.id) === 'out' ? '' : `<button class="round" data-add="${p.id}" aria-label="${esc(t('buy.addNamed', { name: p.short }))}">${ICON.plus}</button>`}
     </div>
   </article>`;
 

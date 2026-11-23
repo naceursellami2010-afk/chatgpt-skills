@@ -4,13 +4,14 @@
    (see applyAdmin in data.js), saved with commitAdmin(), which re-indexes
    the catalogue and redraws the store — no reload, no server. */
 
-import { PRODUCTS, CATEGORIES, SUB_NAMES, HERO, NEW_DROPS, CAT_NAMES, PAGE_SECTIONS, ADMIN_KEY, loadAdmin, shipped } from './data.js?v=20261124k';
-import { LANGS, t, tIn, plural, lang, langInfo } from './i18n.js?v=20261124k';
+import { PRODUCTS, CATEGORIES, SUB_NAMES, HERO, NEW_DROPS, CAT_NAMES, PAGE_SECTIONS, ADMIN_KEY, loadAdmin, shipped } from './data.js?v=20261124m';
+import { LANGS, t, tIn, plural, lang, langInfo } from './i18n.js?v=20261124m';
 import {
   $, $$, byId, tnd, esc, catLabel, subLabel, subsOf, go, ICON, media, fitAll, toast, commitAdmin,
-  isListed, listed, regionOf, valueOf, deliveryType, topupMethod, allOrders, orderTotal
-} from './core.js?v=20261124k';
-import { pageHead, field, emptyState, toggle } from './views.js?v=20261124k';
+  isListed, listed, regionOf, valueOf, deliveryType, topupMethod, allOrders, orderTotal,
+  stock, stockOf, stockState, usesKeys, addKeys, removeKey, replaceStock, LOW_STOCK
+} from './core.js?v=20261124m';
+import { pageHead, field, emptyState, toggle } from './views.js?v=20261124m';
 
 /* ── the owner's record ────────────────────────────────────────────── */
 const clone = v => JSON.parse(JSON.stringify(v));
@@ -623,7 +624,10 @@ function salesChart(days) {
 
 function overviewTab() {
   const s = storeStats();
+  const out = PRODUCTS.filter(p => stockState(p.id) === 'out').length;
   return `
+    ${out ? `<p class="key-waiting ov-alert">${ICON.clock}<span>${esc(t('adm.k.alert', { n: out }))}</span>
+      <a class="btn btn-ghost btn-sm" href="#/admin/keys">${esc(t('adm.k.alertLink'))}</a></p>` : ''}
     <div class="stat-grid">
       ${statTile(FI.dollar, t('adm.st.revenue'), esc(fmtDT(s.revenue)), delta(s.revenue, s.revenuePrev))}
       ${statTile(FI.bag, t('adm.st.orders'), fmtNum(s.orders), delta(s.orders, s.ordersPrev))}
@@ -688,8 +692,105 @@ function mountChart(el) {
 /* ══════════════════════════════════════════════════════════════════════
    The page
    ══════════════════════════════════════════════════════════════════════ */
-const TABS = ['overview', 'categories', 'products', 'sections'];
+const TABS = ['overview', 'categories', 'products', 'keys', 'sections'];
 const TAB_ICON = { overview: FI.overview, categories: FI.layers, products: FI.package, sections: FI.layout };
+/* ══════════════════════════════════════════════════════════════════════
+   Keys & stock — paste each product's keys; paid orders take them in order
+   ══════════════════════════════════════════════════════════════════════ */
+FI.key = fi('<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>');
+FI.keyBig = fi('<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>', 20);
+FI.check = fi('<polyline points="20 6 9 17 4 12"/>', 20);
+FI.alert = fi('<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>', 20);
+FI.slash = fi('<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>', 20);
+TAB_ICON.keys = FI.key;
+
+const keyProducts = () => PRODUCTS.filter(usesKeys);
+const STATE_PILL = { in: 'pill-delivered', low: 'pill-processing', out: 'pill-out', untracked: 'pill-muted' };
+const statePill = id => {
+  const st = stockState(id), s = stockOf(id);
+  const text = st === 'untracked' ? t('stock.untracked') : st === 'out' ? t('stock.out') : st === 'low' ? t('stock.low', { n: s.available }) : t('stock.in');
+  return `<span class="pill ${STATE_PILL[st]}">${esc(text)}</span>`;
+};
+const maskKey = c => (c.length <= 6 ? '•'.repeat(c.length) : c.slice(0, 4) + '•'.repeat(Math.min(12, c.length - 6)) + c.slice(-2));
+let keyFilter = 'all', keyQuery = '';
+
+function keysTab() {
+  const list = keyProducts();
+  const totals = list.reduce((a, p) => { const s = stockOf(p.id); a.av += s.available; a.sold += s.sold; const st = stockState(p.id); if (st === 'low') a.low++; if (st === 'out') a.out++; return a; }, { av: 0, sold: 0, low: 0, out: 0 });
+  const q = keyQuery.toLowerCase();
+  const shown = list.filter(p => {
+    const st = stockState(p.id);
+    if (keyFilter === 'low' && st !== 'low') return false;
+    if (keyFilter === 'out' && st !== 'out') return false;
+    if (keyFilter === 'none' && st !== 'untracked') return false;
+    return !q || `${p.short} ${p.name} ${subLabel(p.sub)}`.toLowerCase().includes(q);
+  });
+  const chip = (id, label) => `<button type="button" class="fchip" data-act="keyFilter" data-id="${id}" ${keyFilter === id ? 'aria-current="true"' : ''}>${esc(label)}</button>`;
+  return `
+    <div class="stat-grid">
+      ${statTile(FI.keyBig, t('adm.k.inStock'), fmtNum(totals.av), `<span class="st-delta flat">${esc(t('adm.k.inStockD'))}</span>`)}
+      ${statTile(FI.check, t('adm.k.sold'), fmtNum(totals.sold), `<span class="st-delta flat">${esc(t('adm.k.soldD'))}</span>`)}
+      ${statTile(FI.alert, t('adm.k.lowN'), fmtNum(totals.low), `<span class="st-delta flat">${esc(t('adm.k.lowD', { n: LOW_STOCK }))}</span>`)}
+      ${statTile(FI.slash, t('adm.k.outN'), fmtNum(totals.out), `<span class="st-delta ${totals.out ? 'down' : 'flat'}">${esc(t('adm.k.outD'))}</span>`)}
+    </div>
+    <p class="demo-note">${ICON.shield}<span>${esc(t('adm.k.demoNote'))}</span></p>
+    <div class="adm-toolbar">
+      <label class="search-field">${ICON.search.replace('width="34" height="34"', 'width="16" height="16"')}
+        <input type="search" id="keySearch" value="${esc(keyQuery)}" placeholder="${esc(t('adm.search'))}" aria-label="${esc(t('adm.search'))}"></label>
+      <div class="chip-row">${chip('all', t('adm.k.all'))}${chip('low', t('adm.k.filterLow'))}${chip('out', t('adm.k.filterOut'))}${chip('none', t('adm.k.filterNone'))}</div>
+    </div>
+    ${shown.length ? `<div class="card adm-table" role="list">
+      ${shown.map(p => { const s = stockOf(p.id); return `
+        <div class="adm-row" role="listitem" data-kid="${esc(p.id)}">
+          ${media(p, 'thumb')}
+          <div class="txt"><b>${esc(p.short)} ${statePill(p.id)}</b><span>${esc(s.tracked ? t('adm.k.counts', { a: s.available, s: s.sold }) : t('adm.k.none'))}</span></div>
+          <a class="btn btn-ghost btn-sm" href="#/admin/keys/${esc(p.id)}">${FI.key} ${esc(t('adm.k.manage'))}</a>
+        </div>`; }).join('')}
+    </div>` : emptyState(ICON.search, t('adm.noResults'), '')}`;
+}
+
+function keysManage(id) {
+  const p = byId[id];
+  if (!p || !usesKeys(p)) return emptyState(ICON.search, t('pdp.notFound'), '', `<a class="btn btn-solid" href="#/admin/keys">${esc(t('adm.k.back'))}</a>`);
+  const list = stock[id] || [], free = list.filter(k => !k.order), sold = list.filter(k => k.order);
+  const waiting = allOrders().filter(o => o.waiting?.[id]).reduce((n, o) => n + o.waiting[id], 0);
+  const account = deliveryType(p) === 'account';
+  return `
+    <a class="see-all adm-back" href="#/admin/keys">${ICON.chev} ${esc(t('adm.k.back'))}</a>
+    <section class="card adm-card">
+      <div class="key-head">${media(p, 'thumb')}<div class="txt"><h2>${esc(p.short)}</h2><p>${statePill(id)} <span class="hint">${esc(t('adm.k.counts', { a: free.length, s: sold.length }))}</span></p></div></div>
+      ${waiting ? `<p class="key-waiting">${ICON.clock}<span><b>${esc(t('adm.k.waiting'))}</b> — ${esc(t('adm.k.waitingD', { n: waiting }))}</span></p>` : ''}
+      <form class="adm-form" data-form="addKeys" data-id="${esc(id)}" novalidate>
+        <h3>${esc(t('adm.k.addTitle'))}</h3>
+        <p class="hint">${esc(t(account ? 'adm.k.addAccount' : 'adm.k.addD'))}</p>
+        <textarea name="keys" rows="6" dir="ltr" spellcheck="false" autocomplete="off" class="key-input"
+          placeholder="${account ? 'player1@example.com:password123&#10;player2@example.com:password456' : 'AAAA-BBBB-CCCC-DDDD&#10;EEEE-FFFF-GGGG-HHHH'}" aria-label="${esc(t('adm.k.addTitle'))}"></textarea>
+        <div class="adm-form-foot">
+          <label class="btn btn-ghost btn-sm">${FI.upload} ${esc(t('adm.k.file'))}<input type="file" accept=".txt,.csv,text/plain,text/csv" id="keyFile" hidden></label>
+          <button class="btn btn-solid" type="submit">${ICON.plus} ${esc(t('adm.k.addBtn'))}</button>
+        </div>
+      </form>
+    </section>
+    <section class="card adm-card">
+      <h3>${esc(t('adm.k.available'))} · ${free.length}</h3>
+      ${free.length ? `<ul class="key-list">${free.map(k => `
+        <li class="cred" data-secret="${esc(k.code)}">
+          <code class="cred-code" dir="ltr">${esc(maskKey(k.code))}</code>
+          <span class="hint">${esc(shortDate(k.added))}</span>
+          <span class="cred-actions">
+            <button class="mini" type="button" data-act="keyReveal" aria-pressed="false">${ICON.eye}<span>${esc(t('cred.reveal'))}</span></button>
+            ${iconBtn('keyRemove', t('adm.k.removeKey'), ICON.trash, `data-id="${esc(id)}" data-code="${esc(k.code)}"`)}
+          </span>
+        </li>`).join('')}</ul>` : `<p class="hint">${esc(t('adm.k.emptyAvail'))}</p>`}
+    </section>
+    <section class="card adm-card">
+      <h3>${esc(t('adm.k.soldList'))} · ${sold.length}</h3>
+      ${sold.length ? `<ul class="key-list">${sold.slice().reverse().map(k => `
+        <li><code class="cred-code" dir="ltr">${esc(maskKey(k.code))}</code>
+          <a class="see-all" href="#/order/${esc(k.order)}">${esc(t('adm.k.order', { id: k.order }))}</a>
+          <span class="hint">${esc(shortDate(k.soldAt))}</span></li>`).join('')}</ul>` : `<p class="hint">${esc(t('adm.k.emptySold'))}</p>`}
+    </section>`;
+}
 
 export const admin = {
   title: () => t('adm.title'),
@@ -698,7 +799,7 @@ export const admin = {
     const editing = tab === 'product';
     const cur = editing ? 'products' : TABS.includes(tab) ? tab : 'overview';
     const body = editing ? productForm(arg) : cur === 'products' ? productsTab() : cur === 'sections' ? sectionsTab()
-      : cur === 'categories' ? categoriesTab() : overviewTab();
+      : cur === 'categories' ? categoriesTab() : cur === 'keys' ? (arg ? keysManage(arg) : keysTab()) : overviewTab();
     const trail = [[t('home'), '#/'], [t('adm.title'), '#/admin'], ...(editing ? [[t('adm.tab.products'), '#/admin/products'],
       [arg === 'new' ? t('adm.addTitle') : (byId[arg]?.short || ''), '']] : [[t('adm.tab.' + cur), '']])];
     return `
@@ -738,11 +839,20 @@ export const admin = {
         case 'subDown': return moveSub(id, 1);
         case 'subDelete': return deleteGroup('sub', id);
         case 'productDelete': if (deleteProduct(id) && ctx.params[0] === 'product') go('#/admin/products'); return;
+        case 'keyFilter': keyFilter = id; return go(location.hash);
+        case 'keyRemove': if (confirm(t('adm.deleteQ', { name: b.dataset.code }))) { removeKey(id, b.dataset.code); toast(t('adm.deleted'), true); go(location.hash); } return;
+        case 'keyReveal': {
+          const row = b.closest('.cred'), shown = b.getAttribute('aria-pressed') === 'true';
+          row.querySelector('.cred-code').textContent = shown ? maskKey(row.dataset.secret) : row.dataset.secret;
+          b.setAttribute('aria-pressed', String(!shown));
+          b.innerHTML = `${shown ? ICON.eye : ICON.eyeOff}<span>${esc(t(shown ? 'cred.reveal' : 'cred.hide'))}</span>`;
+          return;
+        }
         case 'listUp': return change(r => move(listOf(r, key), id, -1), '');
         case 'listDown': return change(r => move(listOf(r, key), id, 1), '');
         case 'listRemove': return change(r => { r[key] = listOf(r, key).filter(x => x !== id); }, '');
         case 'export': {
-          const blob = new Blob([JSON.stringify({ app: 'techgarage-admin', version: 1, record: loadAdmin() }, null, 2)], { type: 'application/json' });
+          const blob = new Blob([JSON.stringify({ app: 'techgarage-admin', version: 2, record: loadAdmin(), stock }, null, 2)], { type: 'application/json' });
           const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'techgarage-store-edits.json' });
           document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
           return;
@@ -756,6 +866,14 @@ export const admin = {
       const form = e.target.closest('[data-form]');
       if (!form) return;
       e.preventDefault();
+      if (form.dataset.form === 'addKeys') {
+        const raw = form.elements.keys.value;
+        if (!raw.trim()) { toast(t('adm.k.nothing')); form.elements.keys.focus(); return; }
+        const { added, dupes } = addKeys(form.dataset.id, raw);
+        toast([t('adm.k.added', { n: added }), dupes ? t('adm.k.dupes', { n: dupes }) : ''].filter(Boolean).join(' · '), added > 0);
+        go(location.hash);
+        return;
+      }
       catActions[form.dataset.form]?.(form);
     };
     const onChange = e => {
@@ -766,11 +884,17 @@ export const admin = {
         f.text().then(text => {
           const data = JSON.parse(text);
           if (data?.app !== 'techgarage-admin' || typeof data.record !== 'object') throw new Error('bad');
+          if (data.stock && typeof data.stock === 'object') replaceStock(data.stock);
           if (commitAdmin(data.record)) toast(t('adm.imported'), true);
         }).catch(() => toast(t('adm.badFile')));
         return;
       }
       if (x.id === 'admCat') { productCat = x.value; return go(location.hash); }
+      if (x.id === 'keyFile') {
+        const file = x.files[0];
+        if (file) file.text().then(text => { const ta = el.querySelector('.key-input'); ta.value = (ta.value ? ta.value + '\n' : '') + text.split(/[\r\n,;]+/).map(v => v.trim()).filter(Boolean).join('\n'); });
+        return;
+      }
       const { change: what, key, id } = x.dataset;
       if (what === 'preset') {
         const form = x.form, other = x.value === OTHER;
@@ -794,6 +918,11 @@ export const admin = {
     };
     let typing;
     const onInput = e => {
+      if (e.target.id === 'keySearch') {
+        clearTimeout(typing);
+        typing = setTimeout(() => { keyQuery = e.target.value; const pos = e.target.selectionStart; go(location.hash); const k = $('#keySearch'); if (k) { k.focus(); k.setSelectionRange(pos, pos); } }, 180);
+        return;
+      }
       if (e.target.id !== 'admSearch') return;
       clearTimeout(typing);
       typing = setTimeout(() => {

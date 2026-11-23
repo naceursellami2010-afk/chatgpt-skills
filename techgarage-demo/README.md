@@ -145,6 +145,18 @@ the home page redraw in place.
   value label, delivery type, what a top-up asks for, tags, badge, description, store link);
   edit any product, shipped ones included; delete. Deleted products leave every list and
   their page, but past orders still show them.
+- **Keys & stock** — paste each product's keys or codes (one per line, or load a .txt /
+  .csv; account products as `email:password`); duplicates are skipped. When a payment
+  succeeds, every item takes its keys from stock, oldest first, and the order page shows
+  the real code (accounts show login and password separately). A product with keys is
+  tracked: with 3 or fewer left it says "Only N left", at 0 it's "Out of stock" and can't be
+  bought, and the basket never holds more than what's left. If two shoppers race for the
+  last key, the order waits and is delivered automatically the moment you add keys. The
+  page shows keys in stock, sold, running low and out of stock; the Overview warns when
+  something has run out. Keys are masked with a Reveal button; sold keys link to their
+  order. Products without keys keep the demo codes. Export / Import include the stock.
+  (Demo: the stock lives in the browser. A real store keeps keys on its server and hands
+  them out from the payment provider's confirmation.)
 - **Page sections** — for the home page: which products the hero carousel, New Drops and
   the product shelf show and in what order, each section's title in three languages, and
   whether it shows at all (Recently Viewed too). For product pages: switch How it works,

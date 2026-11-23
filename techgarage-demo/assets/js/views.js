@@ -4,8 +4,8 @@
    the shell, so most markup only needs data-* attributes.
    Every visible word goes through t() / plural() from i18n.js. */
 
-import { PRODUCTS, CATEGORIES, HERO, NEW_DROPS, RECENT, NOTIFICATIONS, STORE, PAYMENT_METHODS, ACCENTS, AVATARS } from './data.js?v=20261124k';
-import { LANGS, t, plural, blurb, word, faq, lang, setLang, isRTL } from './i18n.js?v=20261124k';
+import { PRODUCTS, CATEGORIES, HERO, NEW_DROPS, RECENT, NOTIFICATIONS, STORE, PAYMENT_METHODS, ACCENTS, AVATARS } from './data.js?v=20261124m';
+import { LANGS, t, plural, blurb, word, faq, lang, setLang, isRTL } from './i18n.js?v=20261124m';
 import {
   $, $$, byId, tnd, esc, catLabel, subLabel, subsOf, avatarSrc, payLabel, fmtDate, go, ICON, state,
   cartQty, cartTotal, setQty, addToCart, markViewed, clearViewed, unreadCount, markRead, noteText,
@@ -13,10 +13,10 @@ import {
   paymentFee, feeLabel,
   deliveryType, credential, searchProducts, media, heartBtn, tile, toast, exportData, resetEverything,
   familyOf, familyVariants, familyLead, familyTile, regionOf, valueOf, topupMethod, FAMILY_CATS,
-  isListed, listed, sectionHidden, secTitle
-} from './core.js?v=20261124k';
-import { PAGE_SECTIONS } from './data.js?v=20261124k';
-import { splitWords, parallax } from './motion.js?v=20261124k';
+  isListed, listed, sectionHidden, secTitle, stockState, stockOf, maxBuyable
+} from './core.js?v=20261124m';
+import { PAGE_SECTIONS } from './data.js?v=20261124m';
+import { splitWords, parallax } from './motion.js?v=20261124m';
 
 /* Where a subcategory link goes: brands (gift cards, mobile games) open their
    product page, where region and value are picked; others open the shop. */
@@ -473,6 +473,15 @@ function howItWorks(p) {
   }
 }
 
+/** "In stock · 12 left" / "Only 2 left" / "Out of stock" for products with keys in stock. */
+function stockBadge(id) {
+  const st = stockState(id);
+  if (st === 'untracked') return '';
+  const n = stockOf(id).available;
+  const text = st === 'out' ? t('stock.out') : st === 'low' ? t('stock.low', { n }) : `${t('stock.in')} · ${t('stock.left', { n })}`;
+  return `<span class="stock-badge stock-${st}"><i aria-hidden="true"></i>${esc(text)}</span>`;
+}
+
 /** Region and value (or amount) chips that switch between a brand's variants. */
 function variantPicker(p) {
   const fam = familyOf(p);
@@ -485,11 +494,11 @@ function variantPicker(p) {
     <div class="vgroup"><span class="vlabel" id="vl-${key.replace('.', '-')}">${esc(t(key))}</span>
       <div class="vchips" role="radiogroup" aria-labelledby="vl-${key.replace('.', '-')}">${chips}</div></div>`;
   const chip = (target, on, inner) =>
-    `<a class="vchip" href="#/product/${target.id}" role="radio" aria-checked="${on}" data-variant>${inner}</a>`;
+    `<a class="vchip${stockState(target.id) === 'out' ? ' is-out' : ''}" href="#/product/${target.id}" role="radio" aria-checked="${on}" data-variant>${inner}</a>`;
   return `<div class="variants">
     ${regions.length > 1 ? group('pdp.region', regions.map(r => chip(closest(r), r === reg, esc(t('region.' + r)))).join('')) : ''}
     ${group(p.cat === 'cards' ? 'pdp.value' : 'pdp.amount',
-            shown.map(v => chip(v, v.id === p.id, `<b dir="auto">${esc(valueOf(v))}</b><small>${tnd(v.price)}</small>`)).join(''))}
+            shown.map(v => chip(v, v.id === p.id, `<b dir="auto">${esc(valueOf(v))}</b><small>${stockState(v.id) === 'out' ? esc(t('stock.out')) : tnd(v.price)}</small>`)).join(''))}
   </div>`;
 }
 
@@ -516,7 +525,7 @@ const product = {
             <p class="listing">${esc(p.name)}</p>
             <p class="pdp-blurb">${esc(blurb(p))}</p>
             ${variantPicker(p)}
-            <div class="price-line"><span class="now">${tnd(p.price)}</span><span class="note">${esc(t('pdp.tax'))}</span></div>
+            <div class="price-line"><span class="now">${tnd(p.price)}</span><span class="note">${esc(t('pdp.tax'))}</span>${stockBadge(p.id)}</div>
             <ul class="facts">
               <li>${ICON.bolt}<span>${esc(dlvText(p))}</span></li>
               <li>${ICON.shield}<span>${esc(p.specs.map(word).join(' · '))}</span></li>
@@ -527,8 +536,8 @@ const product = {
                 <output id="qty" aria-live="polite">1</output>
                 <button type="button" id="qtyUp" aria-label="${esc(t('basket.more'))}">${ICON.plus}</button>
               </div>
-              <button class="btn btn-solid" id="pdpBuy">${ICON.bolt} ${esc(t('buy.now'))}</button>
-              <button class="btn btn-ghost" id="pdpAdd">${ICON.cart} ${esc(t('buy.add'))}</button>
+              <button class="btn btn-solid" id="pdpBuy" ${stockState(p.id) === 'out' ? 'disabled' : ''}>${ICON.bolt} ${esc(t('buy.now'))}</button>
+              <button class="btn btn-ghost" id="pdpAdd" ${stockState(p.id) === 'out' ? 'disabled' : ''}>${ICON.cart} ${esc(t('buy.add'))}</button>
               ${heartBtn(p, 'btn btn-icon pdp-heart')}
             </div>
             ${p.url ? `<a class="source" href="${p.url}" target="_blank" rel="noopener">${esc(t('pdp.source'))} ${ICON.out}</a>` : ''}
@@ -569,7 +578,7 @@ const product = {
     markViewed(p.id);
     let qty = 1;
     const out = $('#qty', el);
-    const set = n => { qty = Math.max(1, Math.min(10, n)); out.textContent = qty; };
+    const set = n => { qty = Math.max(1, Math.min(Math.max(1, maxBuyable(p.id)), n)); out.textContent = qty; };
     $('#qtyDown', el).addEventListener('click', () => set(qty - 1));
     $('#qtyUp', el).addEventListener('click', () => set(qty + 1));
     $('#pdpAdd', el).addEventListener('click', () => addToCart(p.id, qty, $('.pdp-art .m-fg', el)));
@@ -761,6 +770,8 @@ const checkout = {
   mount(el) {
     const form = $('#checkoutForm', el);
     if (!form) return;
+    // stock may have changed since these were added: no line can ask for more than is left
+    for (const [id, q] of Object.entries(state.cart)) if (q > maxBuyable(id)) { setQty(id, maxBuyable(id)); return; }
     let timer = null;
     // the page container outlives each render, so this listener is removed in the cleanup
     const onClick = e => {
@@ -928,7 +939,7 @@ const order = {
             ${o.items.map(([id, q]) => { const p = byId[id]; return `
               <div class="order-item">
                 <a class="oi-head" href="#/product/${id}">${media(p, 'thumb')}<span class="txt"><b>${esc(p.short)}</b><span>${q} × ${tnd(p.price)}</span></span></a>
-                ${done ? Array.from({ length: q }, (_, n) => credBlock({ ...o, id: o.id + (n ? '-' + n : '') }, id)).join('')
+                ${done ? Array.from({ length: q }, (_, n) => credBlock({ ...o, id: o.id + (n ? '-' + n : ''), unit: n }, id)).join('')
                        : `<div class="cred pending"><i class="spinner"></i><span>${esc(t('ord.preparing'))}</span></div>`}
               </div>`; }).join('')}
           </section>
