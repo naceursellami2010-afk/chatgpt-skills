@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-NON_SKILL_DIRS = {"tests", "public"}
+NON_SKILL_DIRS = {"tests", "public", "techgarage-demo"}  # techgarage-demo: a website demo, not a skill
 
 
 def list_candidate_skills():
