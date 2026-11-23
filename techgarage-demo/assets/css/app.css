@@ -7,19 +7,25 @@
 /* --- tokens --------------------------------------------------------------- */
 :root {
   /* type */
-  --display: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-  --ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Apple's own type: -apple-system / BlinkMacSystemFont resolve to SF Pro on
+     every Mac, iPhone and iPad (the OS picks SF Pro Text or Display by size).
+     SF Pro can't be hosted on a non-Apple site, so everyone else gets Inter,
+     the closest open design, with optical sizing switched on. */
+  --display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --ui:      -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Helvetica Neue', Arial, sans-serif;
 
   /* ink on glass */
   --ink:    #fff;
-  --ink-70: rgba(255, 255, 255, .72);
-  --ink-50: rgba(255, 255, 255, .52);
-  --ink-35: rgba(255, 255, 255, .36);
+  --ink-80: rgba(255, 255, 255, .86);
+  --ink-70: rgba(255, 255, 255, .88);
+  --ink-50: rgba(255, 255, 255, .76);
+  --ink-35: rgba(255, 255, 255, .58);
 
   /* glass materials, lightest to heaviest */
-  --pane:   rgba(146, 148, 158, .26);
-  --card:   rgba(255, 255, 255, .10);
-  --card-2: rgba(255, 255, 255, .15);
+  /* deep enough that white text clears WCAG AA (4.5:1) on every surface */
+  --pane:   rgba(38, 40, 48, .70);
+  --card:   rgba(12, 14, 20, .20);
+  --card-2: rgba(12, 14, 20, .28);
   --raise:  rgba(255, 255, 255, .22);
   --sunken: rgba(16, 17, 21, .28);
 
@@ -1324,6 +1330,63 @@ ul { margin: 0; padding: 0; list-style: none; }
   pointer-events: none;
   box-shadow: var(--lift-2);
 }
+
+/* ==========================================================================
+   10b. Typography — Apple's type scale and spacing
+   Bigger body text, more line height, tighter tracking as size grows,
+   and tabular figures so prices line up.
+   ========================================================================== */
+body {
+  font-size: 15px;
+  line-height: 1.47;
+  letter-spacing: -.011em;
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+}
+.px, .price-line .now, .total b, .result .px { font-variant-numeric: tabular-nums; }
+
+.slide h1     { font-size: clamp(34px, 3.3vw, 48px); line-height: 1.07; letter-spacing: -.028em; }
+.slide p      { font-size: 16px; line-height: 1.5; letter-spacing: -.012em; color: var(--ink-80); }
+.price-line .now  { font-size: 26px; letter-spacing: -.022em; }
+.price-line .note { font-size: 13px; }
+.chip, .badge { font-size: 12.5px; letter-spacing: -.004em; }
+.btn          { font-size: 15px; letter-spacing: -.012em; white-space: nowrap; flex: none; }
+
+.tab          { font-size: 15px; letter-spacing: -.012em; color: rgba(255,255,255,.95); }
+.tab:hover    { color: #fff; }
+.search input { font-size: 15px; letter-spacing: -.011em; }
+.account .who b    { font-size: 14px; letter-spacing: -.012em; }
+.account .who span { font-size: 12px; }
+
+.card-head h2  { font-size: 17px; letter-spacing: -.02em; }
+.shelf-head h2 { font-size: 22px; letter-spacing: -.024em; }
+.sort-btn      { font-size: 12.5px; }
+.see-all       { font-size: 13px; }
+
+.drop-meta h3  { font-size: 14px; letter-spacing: -.012em; }
+.drop-meta .px { font-size: 12.5px; }
+.recent-row span { font-size: 12.5px; }
+.recent-row b    { font-size: 14px; letter-spacing: -.012em; }
+.tile-tag        { font-size: 12px; }
+.tile-body h3    { font-size: 15.5px; letter-spacing: -.016em; text-wrap: balance; }
+.drop-meta h3, .sheet-body h2, .slide h1 { text-wrap: balance; }
+.tile-body p     { font-size: 12.5px; line-height: 1.42; }
+.tile-body .px   { font-size: 14px; }
+
+.result b, .pop-row b      { font-size: 14px; letter-spacing: -.012em; }
+.result span, .pop-row p   { font-size: 12.5px; }
+.sheet-body h2  { font-size: 26px; line-height: 1.12; letter-spacing: -.026em; }
+.sheet-body .listing { margin: -6px 0 0; font-size: 12.5px; color: var(--ink-50); letter-spacing: 0; }
+.sheet-body p   { font-size: 15px; }
+.spec           { font-size: 12.5px; }
+.drawer-head h2 { font-size: 19px; letter-spacing: -.02em; }
+.line b         { font-size: 14px; letter-spacing: -.012em; }
+.line .px       { font-size: 12.5px; }
+.toast          { font-size: 14px; }
+
+/* active tab: a solid white pill with dark text, like the rail */
+.tab[aria-selected='true'] { color: #111318; }
+.tab-pill { background: #fff; border-color: transparent; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
 
 /* ==========================================================================
    11. Responsive

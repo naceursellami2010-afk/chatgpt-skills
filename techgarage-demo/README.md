@@ -22,7 +22,7 @@ Then open <http://localhost:8000>. It must be served over HTTP rather than opene
 Every product name, price and category comes from the live techgarage.tn catalogue —
 24 digital products: game keys and fresh Steam accounts, Steam / PlayStation / iTunes /
 Riot gift cards, eFootball and PUBG Mobile top-ups, a Windows licence and Discord Nitro.
-Hardware is deliberately left out. Prices are rendered in the store's own format (`TND3,599.000`). The contact
+Hardware is deliberately left out. Prices are whole dinars, shown as `180 TND`. The contact
 details and the brand accent (`#38a699`, sampled from the site's CSS) are theirs too.
 
 The shopper, the notifications and the "recently viewed" history are invented, as a demo
@@ -53,7 +53,12 @@ transitions.
 
 ## Design notes
 
-Poppins for display, Inter for UI, both via Google Fonts. The background is a set of
+Apple's own typeface: the font stack asks for the system font, so every Mac, iPhone and
+iPad renders SF Pro (Apple's licence doesn't allow hosting SF Pro on a non-Apple site).
+Other devices get Inter, the closest open design, with optical sizing. Type follows
+Apple's habits — 15px body at 1.47 line height, tracking that tightens as size grows,
+tabular figures for prices. Every text style clears WCAG AA contrast (4.5:1) against the
+glass. The background is a set of
 slowly drifting radial light pools over a grey gradient, with an SVG grain overlay so it
 never reads as flat vector mush; everything animated moves on `transform` only.
 

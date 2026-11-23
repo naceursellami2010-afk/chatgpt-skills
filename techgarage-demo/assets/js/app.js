@@ -9,8 +9,9 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const byId = Object.fromEntries(PRODUCTS.map(p => [p.id, p]));
 const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/** The store prints prices as TND3,599.000 — keep its format. */
-const tnd = n => 'TND' + n.toLocaleString('en-US') + '.000';
+/** Every price is a whole number of dinars, so drop the store's ".000"
+    millimes and the run-on prefix: "TND180.000" reads as "180 TND". */
+const tnd = n => n.toLocaleString('en-US') + ' TND';
 
 const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -482,7 +483,8 @@ function openSheet(id) {
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
       <div class="chips">${p.tags.map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div>
-      <h2>${esc(p.name)}</h2>
+      <h2>${esc(p.short)}</h2>
+      <p class="listing">${esc(p.name)}</p>
       <p>${esc(p.blurb)}</p>
       <div class="specs">${(p.specs || []).map(s => `<span class="spec">${esc(s)}</span>`).join('')}</div>
       <div class="price-line"><span class="now">${tnd(p.price)}</span><span class="note">VAT included</span></div>
