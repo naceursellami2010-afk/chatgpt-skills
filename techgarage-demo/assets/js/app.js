@@ -9,9 +9,9 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const byId = Object.fromEntries(PRODUCTS.map(p => [p.id, p]));
 const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/** Every price is a whole number of dinars, so drop the store's ".000"
-    millimes and the run-on prefix: "TND180.000" reads as "180 TND". */
-const tnd = n => n.toLocaleString('en-US') + ' TND';
+/** Every price is a whole number of dinars, shown the way Tunisian shops
+    write it: "180 DT". */
+const tnd = n => n.toLocaleString('en-US') + ' DT';
 
 const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -487,7 +487,9 @@ function openSheet(id) {
       <p class="listing">${esc(p.name)}</p>
       <p>${esc(p.blurb)}</p>
       <div class="specs">${(p.specs || []).map(s => `<span class="spec">${esc(s)}</span>`).join('')}</div>
-      <div class="price-line"><span class="now">${tnd(p.price)}</span><span class="note">VAT included</span></div>
+      <div class="price-line"><span class="now">${tnd(p.price)}</span><span class="note">Tax incl.</span></div>
+      ${p.url ? `<a class="source" href="${p.url}" target="_blank" rel="noopener">View on techgarage.tn
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></a>` : ''}
       <div class="sheet-cta">
         <button class="btn btn-solid" data-add="${p.id}">${ICON.cart} Add to basket</button>
         <button class="btn btn-icon" data-wish="${p.id}" aria-pressed="${saved}" aria-label="Save" style="${saved ? 'color:#38a699' : ''}">${ICON.heart}</button>

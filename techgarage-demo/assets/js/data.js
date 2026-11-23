@@ -4,6 +4,7 @@
    Prices are in Tunisian dinar and rendered in the store's own format. */
 
 const P = 'assets/products/';
+const S = 'https://techgarage.tn/';   /* each product's page on the live store */
 
 /* kind: 'art' — full-bleed artwork, fills its frame.
    (The UI also supports 'cut' for transparent product cutouts.) */
@@ -11,7 +12,8 @@ const P = 'assets/products/';
 export const PRODUCTS = [
   /* ---- PC games: keys & fresh accounts ----------------------------- */
   {
-    id: 'bo7', name: 'Call Of Duty : Black OPS 7 Standard Edition',
+    id: 'bo7', url: S + 'accounts/1380-call-of-duty-black-ops-7.html',
+    name: 'Call Of Duty : Black OPS 7 Standard Edition',
     short: 'Call of Duty: Black Ops 7', price: 180, cat: 'games', kind: 'art',
     img: P + 'call-of-duty-black-ops-7.webp',
     tags: ['Fresh Steam Account', 'FPS'], badge: 'Now trending',
@@ -19,7 +21,8 @@ export const PRODUCTS = [
     specs: ['Steam', 'Standard Edition', 'Instant delivery']
   },
   {
-    id: 'fc27', name: 'EA FC27 STANDARD EDITION FRESH STEAM ACCOUNT',
+    id: 'fc27', url: S + 'ea-fc-27/2126-ea-fc27-standard-edition-fresh-steam-account.html',
+    name: 'EA FC27 STANDARD EDITION FRESH STEAM ACCOUNT',
     short: 'EA SPORTS FC 27', price: 90, cat: 'games', kind: 'art',
     img: P + 'ea-fc27-standard-edition-fresh-steam-account.webp',
     tags: ['Fresh Steam Account', 'Sports'], badge: 'New season',
@@ -27,7 +30,8 @@ export const PRODUCTS = [
     specs: ['Steam', 'Standard Edition', 'Instant delivery']
   },
   {
-    id: 'elden-ring', name: 'Elden Ring Fresh Steam account',
+    id: 'elden-ring', url: S + 'accounts/1139-elden-ring-fresh-steam-account.html',
+    name: 'Elden Ring Fresh Steam account',
     short: 'Elden Ring', price: 100, cat: 'games', kind: 'art',
     img: P + 'elden-ring-fresh-steam-account.webp',
     tags: ['Fresh Steam Account', 'RPG'],
@@ -35,7 +39,8 @@ export const PRODUCTS = [
     specs: ['Steam', 'Base game', 'Instant delivery']
   },
   {
-    id: 'ac-shadows', name: 'Assassin’s Creed Shadows (PC) Ubisoft Connect Key GLOBAL',
+    id: 'ac-shadows', url: S + 'key/774-assassins-creed-shadows-pc-ubisoft-connect-key-global.html',
+    name: 'Assassin’s Creed Shadows (PC) Ubisoft Connect Key GLOBAL',
     short: 'Assassin’s Creed Shadows', price: 200, cat: 'games', kind: 'art',
     img: P + 'assassins-creed-shadows-pc-ubisoft-connect-key-global.webp',
     tags: ['Ubisoft Connect', 'Global Key'],
@@ -43,7 +48,8 @@ export const PRODUCTS = [
     specs: ['Ubisoft Connect', 'Global', 'Instant delivery']
   },
   {
-    id: 'wukong', name: 'black myth wukong FRESH STEAM ACCOUNT',
+    id: 'wukong', url: S + 'accounts/651-black-myth-wukong-fresh-steam-account.html',
+    name: 'black myth wukong FRESH STEAM ACCOUNT',
     short: 'Black Myth: Wukong', price: 120, cat: 'games', kind: 'art',
     img: P + 'black-myth-wukong-fresh-steam-account.webp',
     tags: ['Fresh Steam Account', 'Action'],
@@ -51,7 +57,8 @@ export const PRODUCTS = [
     specs: ['Steam', 'Base game', 'Instant delivery']
   },
   {
-    id: 'ready-or-not', name: 'Ready or Not Steam Key GLOBAL',
+    id: 'ready-or-not', url: S + 'key/23-ready-or-not-steam-key-global.html',
+    name: 'Ready or Not Steam Key GLOBAL',
     short: 'Ready or Not', price: 110, cat: 'games', kind: 'art',
     img: P + 'ready-or-not-steam-key-global.webp',
     tags: ['Steam Key', 'Tactical'],
@@ -59,7 +66,8 @@ export const PRODUCTS = [
     specs: ['Steam', 'Global', 'Instant delivery']
   },
   {
-    id: 'split-fiction', name: 'Split Fiction Fresh New Steam Account',
+    id: 'split-fiction', url: S + 'accounts/1134-split-fiction-fresh-new-steam-account.html',
+    name: 'Split Fiction Fresh New Steam Account',
     short: 'Split Fiction', price: 100, cat: 'games', kind: 'art',
     img: P + 'split-fiction-fresh-new-steam-account.webp',
     tags: ['Fresh Steam Account', 'Co-op'],
@@ -67,7 +75,8 @@ export const PRODUCTS = [
     specs: ['Steam', 'Co-op', 'Instant delivery']
   },
   {
-    id: 'inzoi', name: 'inzoi Fresh Steam account',
+    id: 'inzoi', url: S + 'accounts/1137-inzoi-fresh-steam-account.html',
+    name: 'inzoi Fresh Steam account',
     short: 'inZOI', price: 100, cat: 'games', kind: 'art',
     img: P + 'inzoi-fresh-steam-account.webp',
     tags: ['Fresh Steam Account', 'Simulation'],
@@ -75,7 +84,8 @@ export const PRODUCTS = [
     specs: ['Steam', 'Base game', 'Instant delivery']
   },
   {
-    id: 'tlou2', name: 'THE LAST OF US Part 2 FRESH STEAM Account',
+    id: 'tlou2', url: S + 'accounts/1389-the-last-of-us-part-1-fresh-steam-account.html',
+    name: 'THE LAST OF US Part 2 FRESH STEAM Account',
     short: 'The Last of Us Part II', price: 120, cat: 'games', kind: 'art',
     img: P + 'the-last-of-us-part-1-fresh-steam-account.webp',
     tags: ['Fresh Steam Account', 'Story'],
@@ -83,7 +93,8 @@ export const PRODUCTS = [
     specs: ['Steam', 'Remastered', 'Instant delivery']
   },
   {
-    id: 'nba2k26', name: 'NBA 2K26 Standard Edition Fresh Account',
+    id: 'nba2k26', url: S + 'accounts/1375-nba-2k26-standard-edition-fresh-account.html',
+    name: 'NBA 2K26 Standard Edition Fresh Account',
     short: 'NBA 2K26', price: 115, cat: 'games', kind: 'art',
     img: P + 'nba-2k26-standard-edition-fresh-account.webp',
     tags: ['Fresh Steam Account', 'Sports'], badge: 'New',
@@ -91,7 +102,8 @@ export const PRODUCTS = [
     specs: ['Steam', 'Standard Edition', 'Instant delivery']
   },
   {
-    id: 'f1-2025', name: 'EA SPORTS F1 2025 Standard Edition — New Steam Account',
+    id: 'f1-2025', url: S + 'accounts/1674-ea-sports-f1-2025-standard-editionnew-steam-account.html',
+    name: 'EA SPORTS F1 2025 Standard Edition — New Steam Account',
     short: 'EA SPORTS F1 25', price: 90, cat: 'games', kind: 'art',
     img: P + 'ea-sports-f1-2025-standard-editionnew-steam-account.webp',
     tags: ['Fresh Steam Account', 'Racing'],
@@ -99,7 +111,8 @@ export const PRODUCTS = [
     specs: ['Steam', 'Standard Edition', 'Instant delivery']
   },
   {
-    id: 'gta5', name: 'GRAND THEFT AUTO: V FRESH STEAM ACCOUNT',
+    id: 'gta5', url: S + 'accounts/474-grand-theft-auto-v-fresh-steam-account.html',
+    name: 'GRAND THEFT AUTO: V FRESH STEAM ACCOUNT',
     short: 'Grand Theft Auto V', price: 45, cat: 'games', kind: 'art',
     img: P + 'grand-theft-auto-v-fresh-steam-account.webp',
     tags: ['Fresh Steam Account', 'Open World'],
@@ -107,7 +120,8 @@ export const PRODUCTS = [
     specs: ['Steam', 'Base game', 'Instant delivery']
   },
   {
-    id: 'minecraft', name: 'Minecraft: Java & Bedrock Edition (PC) Windows FRESH ACCOUNT',
+    id: 'minecraft', url: S + 'accounts/477-minecraft-java-bedrock-edition-pc-windows-store-key-global.html',
+    name: 'Minecraft: Java & Bedrock Edition (PC) Windows FRESH ACCOUNT',
     short: 'Minecraft Java & Bedrock', price: 45, cat: 'games', kind: 'art',
     img: P + 'minecraft-java-bedrock-edition-pc-windows-store-key-global.webp',
     tags: ['Fresh Account', 'Sandbox'],
@@ -117,7 +131,8 @@ export const PRODUCTS = [
 
   /* ---- Gift cards ---------------------------------------------------- */
   {
-    id: 'steam-20', name: 'Steam Wallet Gift Card 20 USD Steam Key',
+    id: 'steam-20', url: S + 'steam-usd/53-steam-wallet-gift-card-20-usd-steam-key.html',
+    name: 'Steam Wallet Gift Card 20 USD Steam Key',
     short: 'Steam Wallet 20 USD', price: 78, cat: 'cards', kind: 'art',
     img: P + 'steam-wallet-gift-card-20-usd-steam-key.webp',
     tags: ['Gift Card', 'Steam'], badge: 'Best seller',
@@ -125,7 +140,8 @@ export const PRODUCTS = [
     specs: ['Steam', '20 USD', 'Instant delivery']
   },
   {
-    id: 'steam-50', name: 'Steam Wallet Gift Card 50 USD Steam Key',
+    id: 'steam-50', url: S + 'steam-usd/54-steam-wallet-gift-card-50-usd-steam-key.html',
+    name: 'Steam Wallet Gift Card 50 USD Steam Key',
     short: 'Steam Wallet 50 USD', price: 190, cat: 'cards', kind: 'art',
     img: P + 'steam-wallet-gift-card-50-usd.webp',
     tags: ['Gift Card', 'Steam'],
@@ -133,7 +149,8 @@ export const PRODUCTS = [
     specs: ['Steam', '50 USD', 'Instant delivery']
   },
   {
-    id: 'psn-20', name: 'PlayStation Network Card 20 EUR (FR) PSN Key FRANCE',
+    id: 'psn-20', url: S + 'playstation-france/126-playstation-network-card-20-eur-fr-psn-key-france.html',
+    name: 'PlayStation Network Card 20 EUR (FR) PSN Key FRANCE',
     short: 'PlayStation 20 EUR (FR)', price: 80, cat: 'cards', kind: 'art',
     img: P + 'psn-card-20-eur-france.webp',
     tags: ['Gift Card', 'PlayStation'],
@@ -141,7 +158,8 @@ export const PRODUCTS = [
     specs: ['PSN', '20 EUR', 'France']
   },
   {
-    id: 'itunes-20', name: 'Apple iTunes Gift Card 20 USD iTunes Key UNITED STATES',
+    id: 'itunes-20', url: S + 'itunes-usa/615-apple-itunes-gift-card-20-usd-itunes-key-united-states.html',
+    name: 'Apple iTunes Gift Card 20 USD iTunes Key UNITED STATES',
     short: 'Apple iTunes 20 USD', price: 78, cat: 'cards', kind: 'art',
     img: P + 'apple-itunes-gift-card-20-usd.webp',
     tags: ['Gift Card', 'Apple'],
@@ -149,7 +167,8 @@ export const PRODUCTS = [
     specs: ['Apple', '20 USD', 'United States']
   },
   {
-    id: 'valorant-20', name: 'VALORANT Gift Card 20 EUR — EUROPE',
+    id: 'valorant-20', url: S + 'valorant-EUW/59-valorant-gift-card-20-eur-europe.html',
+    name: 'VALORANT Gift Card 20 EUR — EUROPE',
     short: 'VALORANT 20 EUR', price: 74, cat: 'cards', kind: 'art',
     img: P + 'valorant-gift-card-20-eur-europe.webp',
     tags: ['Gift Card', 'Riot'],
@@ -157,7 +176,8 @@ export const PRODUCTS = [
     specs: ['Riot', '20 EUR', 'Europe']
   },
   {
-    id: 'lol-20', name: 'League of Legends Gift Card 20€ Riot Key — EUROPE',
+    id: 'lol-20', url: S + 'league-of-legends-rp/67-valorant-gift-card-20-eur-europe.html',
+    name: 'League of Legends Gift Card 20€ Riot Key — EUROPE',
     short: 'League of Legends 20 EUR', price: 74, cat: 'cards', kind: 'art',
     img: P + 'league-of-legends-gift-card-20-eur.webp',
     tags: ['Gift Card', 'Riot'],
@@ -167,7 +187,8 @@ export const PRODUCTS = [
 
   /* ---- Mobile top-ups ------------------------------------------------ */
   {
-    id: 'efootball-1000', name: 'EFOOTBALL 1000 Coins',
+    id: 'efootball-1000', url: S + 'efootball-2027/431-efootball-1000-coins.html',
+    name: 'EFOOTBALL 1000 Coins',
     short: 'eFootball 1000 Coins', price: 35, cat: 'mobile', kind: 'art',
     img: P + 'efootball-1000-coins.webp',
     tags: ['Top-up', 'eFootball'],
@@ -175,7 +196,8 @@ export const PRODUCTS = [
     specs: ['eFootball 2027', '1000 coins', 'Fast top-up']
   },
   {
-    id: 'efootball-5000', name: 'EFOOTBALL 5000 Coins',
+    id: 'efootball-5000', url: S + 'efootball-2027/434-efootball-5000-coins.html',
+    name: 'EFOOTBALL 5000 Coins',
     short: 'eFootball 5000 Coins', price: 160, cat: 'mobile', kind: 'art',
     img: P + 'efootball-5000-coins.webp',
     tags: ['Top-up', 'eFootball'], badge: 'Best value',
@@ -183,7 +205,8 @@ export const PRODUCTS = [
     specs: ['eFootball 2027', '5000 coins', 'Fast top-up']
   },
   {
-    id: 'pubg-3850', name: 'PUBG Mobile 3850 UC',
+    id: 'pubg-3850', url: S + 'pubg-mobile/459-pubg-mobile-3850-uc.html',
+    name: 'PUBG Mobile 3850 UC',
     short: 'PUBG Mobile 3850 UC', price: 190, cat: 'mobile', kind: 'art',
     img: P + 'pubg-mobile-3850-uc.webp',
     tags: ['Top-up', 'PUBG Mobile'],
@@ -193,7 +216,8 @@ export const PRODUCTS = [
 
   /* ---- Software & subscriptions ------------------------------------- */
   {
-    id: 'win11', name: 'Windows 10/11 Professional Key — Tunisia',
+    id: 'win11', url: S + 'software-licenses/512-windows11-pro.html',
+    name: 'Windows 10/11 Professional Key — Tunisia',
     short: 'Windows 11 Pro', price: 20, cat: 'software', kind: 'art',
     img: P + 'windows11-pro.webp',
     tags: ['Software', 'Licence'], badge: 'Cheapest',
@@ -201,7 +225,8 @@ export const PRODUCTS = [
     specs: ['Windows 10/11', 'Pro', 'Instant delivery']
   },
   {
-    id: 'nitro-1m', name: 'DISCORD NITRO KEY 1 MONTH',
+    id: 'nitro-1m', url: S + 'software-licenses/514-discord-nitro-key-1-month.html',
+    name: 'DISCORD NITRO KEY 1 MONTH',
     short: 'Discord Nitro — 1 month', price: 35, cat: 'software', kind: 'art',
     img: P + 'discord-nitro-1-month.webp',
     tags: ['Subscription', 'Discord'],
@@ -241,8 +266,8 @@ export const ACCOUNT = {
 
 export const NOTIFICATIONS = [
   { who: 'yassine', title: 'Key delivered',  body: 'Your EA FC 27 account details are in your inbox.',     when: '12m' },
-  { who: 'mariem',  title: 'Back in stock',  body: 'Steam Wallet 50 USD is available again — 190 TND.', when: '2h'  },
-  { who: 'oussama', title: 'Price drop',     body: 'Windows 10/11 Pro key is down to 20 TND.',            when: '1d'  },
+  { who: 'mariem',  title: 'Back in stock',  body: 'Steam Wallet 50 USD is available again — 190 DT.', when: '2h'  },
+  { who: 'oussama', title: 'Price drop',     body: 'Windows 10/11 Pro key is down to 20 DT.',            when: '1d'  },
   { who: 'nour',    title: 'Top-up done',    body: '5000 eFootball coins credited to your account.',      when: '2d'  }
 ];
 

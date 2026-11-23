@@ -22,7 +22,15 @@ Then open <http://localhost:8000>. It must be served over HTTP rather than opene
 Every product name, price and category comes from the live techgarage.tn catalogue —
 24 digital products: game keys and fresh Steam accounts, Steam / PlayStation / iTunes /
 Riot gift cards, eFootball and PUBG Mobile top-ups, a Windows licence and Discord Nitro.
-Hardware is deliberately left out. Prices are whole dinars, shown as `180 TND`. The contact
+Hardware is deliberately left out. Prices are whole dinars, shown as `180 DT`, and every product records its page on the
+live store (`url` in `data.js`). To re-check them against the site at any time:
+
+```bash
+python3 scripts/sync_prices.py --check   # report differences
+python3 scripts/sync_prices.py           # update data.js to match the store
+```
+
+Quick view links each product back to its techgarage.tn page. The contact
 details and the brand accent (`#38a699`, sampled from the site's CSS) are theirs too.
 
 The shopper, the notifications and the "recently viewed" history are invented, as a demo
