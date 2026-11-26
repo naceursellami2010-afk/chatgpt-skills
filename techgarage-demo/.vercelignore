@@ -1,0 +1,6 @@
+# kept out of the Vercel upload: test screenshots, reference videos, local builds
+.playwright-mcp
+references
+dist
+scripts
+*.rar

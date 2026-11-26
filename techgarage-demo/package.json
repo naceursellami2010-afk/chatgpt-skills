@@ -9,10 +9,11 @@
     "start": "python3 -m http.server 8000"
   },
   "dependencies": {
-    "arena": "^0.0.2",
-    "claude-consult-mcp": "^0.14.0",
-    "graphify": "^1.0.0",
-    "ponytail": "^1.0.57"
+    "@upstash/redis": "^1.41.1",
+    "@vercel/blob": "^2.9.0"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "zod": "^4.6.6"
+  }
 }

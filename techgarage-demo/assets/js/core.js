@@ -2,8 +2,11 @@
    Everything a page needs lives here so the views stay declarative. */
 
 import { PRODUCTS, CATEGORIES, SUB_NAMES, ACCOUNT, ORDERS_SEED, NOTIFICATIONS, TOPUP_METHOD, PAYMENT_FEES,
-         RETIRED, CAT_NAMES, ADMIN_KEY, PAGE_SECTIONS, applyAdmin } from './data.js?v=20261124t';
-import { t, plural, price, date, word, blurb, num, lang } from './i18n.js?v=20261124t';
+         RETIRED, CAT_NAMES, ADMIN_KEY, PAGE_SECTIONS, applyAdmin, PROMO, BUNDLES, ORDER_STATUS, ORDER_TRACK, SHIPPING, SHIP_METHODS, STORE, SITE } from './data.js?v=20261129d';
+import { t, plural, price, date, word, blurb, num, lang } from './i18n.js?v=20261129d';
+import { cleanAdmin, cleanStock, cleanCart, cleanProfile, cleanOrders, cleanPrefs } from './guard.js?v=20261129d';
+import { srcOf } from './media-store.js?v=20261129d';
+import { pushRecord } from './sync.js?v=20261129d';
 
 /* ── helpers ───────────────────────────────────────────────────────── */
 export const $  = (s, r = document) => r.querySelector(s);
@@ -120,6 +123,8 @@ export const ICON = {
   up:     svg('<path d="M6 15l6-6 6 6"/>', 14, 2.4),
   trash:  svg('<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/>', 15, 1.9),
   flame:  svg('<path d="M12 21c-3.9 0-7-2.8-7-6.6 0-2.6 1.5-4.6 3.2-6.3.4 1.7 1.3 2.8 2.4 3.4C10.3 8.3 11.6 5.3 14.5 3c-.2 2.9.9 4.8 2.4 6.6C18.3 11.2 19 12.8 19 14.4 19 18.2 15.9 21 12 21z"/><path d="M12 21c-1.7 0-3-1.2-3-2.9 0-1.6 1.1-2.6 2.3-3.6.2 1 .8 1.6 1.4 1.9.3-1.2.9-2.2 1.9-3 .2 1.1.7 1.9 1.1 2.6.3.6.3 1 .3 1.7 0 2-1.3 3.3-4 3.3z"/>', 15, 1.8),
+  pause:  svg('<rect x="6.5" y="5" width="3.5" height="14" rx="1"/><rect x="14" y="5" width="3.5" height="14" rx="1"/>', 16, 1.8),
+  play:   svg('<path d="M7 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L8.2 4.8A.8.8 0 0 0 7 5.5z"/>', 16, 1.8),
   lock:   svg('<rect x="4" y="10.5" width="16" height="11" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>', 18, 1.8),
   globe:  svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>', 18, 1.8),
   download: svg('<path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/>', 16),
@@ -129,12 +134,13 @@ export const ICON = {
 };
 
 /* ── persistence ───────────────────────────────────────────────────── */
-const KEYS = ['tg.cart', 'tg.wish', 'tg.prefs', 'tg.profile', 'tg.orders', 'tg.viewed', 'tg.read', 'tg.lang'];
+const KEYS = ['tg.cart', 'tg.wish', 'tg.prefs', 'tg.profile', 'tg.orders', 'tg.viewed', 'tg.read', 'tg.lang', 'tg.session'];
 
 const load = (k, fallback) => {
   try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; }
   catch { return fallback; }
 };
+const arr = v => (Array.isArray(v) ? v : []);
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
 const DEFAULT_PREFS = {
@@ -146,21 +152,28 @@ const DEFAULT_PREFS = {
   notify: { orders: true, stock: true, prices: true, news: false }
 };
 
-const storedPrefs = load('tg.prefs', {});
+const storedPrefs = cleanPrefs(load('tg.prefs', {}));
 const known = isListed;
 
 /* Saved data can outlive the catalogue (an earlier build sold hardware), so
    anything that no longer exists is dropped on load. */
-const cleanCart = Object.fromEntries(Object.entries(load('tg.cart', {})).filter(([id, q]) => known(id) && Number.isInteger(q) && q > 0));
+const savedCart = Object.fromEntries(Object.entries(cleanCart(load('tg.cart', {}))).filter(([id]) => known(id)));
+
+/* Signed out, the shopper is a guest with an empty profile; the saved
+   account stays in the browser until they sign back in. */
+const GUEST = { name: '', handle: '', email: '', phone: '', avatar: 'sami', since: '' };
+const savedAccount = () => ({ ...ACCOUNT, ...cleanProfile(load('tg.profile', {})) });
+const startSignedIn = load('tg.session', 'in') !== 'out';
 
 export const state = {
-  cart: cleanCart,
-  wish: new Set(load('tg.wish', []).filter(known)),
+  signedIn: startSignedIn,
+  cart: savedCart,
+  wish: new Set(arr(load('tg.wish', [])).filter(known)),
   prefs: { ...DEFAULT_PREFS, ...storedPrefs, notify: { ...DEFAULT_PREFS.notify, ...(storedPrefs.notify || {}) } },
-  profile: { ...ACCOUNT, ...load('tg.profile', {}) },
-  orders: load('tg.orders', []).filter(o => o.items?.every(([id]) => id in byId)),   // removed products stay readable
-  viewed: load('tg.viewed', []).filter(known),
-  read: new Set(load('tg.read', []))
+  profile: startSignedIn ? savedAccount() : { ...GUEST },
+  orders: cleanOrders(load('tg.orders', [])).filter(o => o.items.every(([id]) => id in byId)),   // removed products stay readable
+  viewed: arr(load('tg.viewed', [])).filter(known),
+  read: new Set(arr(load('tg.read', [])).filter(x => typeof x === 'string'))
 };
 
 /* ── tiny event bus: views re-render when the data they show changes ── */
@@ -172,6 +185,32 @@ export const emit = ev => subs[ev]?.forEach(fn => fn());
 /* ── basket ────────────────────────────────────────────────────────── */
 export const cartQty   = () => Object.values(state.cart).reduce((a, b) => a + b, 0);
 export const cartTotal = () => Object.entries(state.cart).reduce((s, [id, q]) => s + byId[id].price * q, 0);
+export const cartShips = () => Object.keys(state.cart).some(id => isShipped(byId[id]));
+
+/* ── delivery of physical products ─────────────────────────────────── */
+/** The delivery methods open for a country ('TN', 'FR', …), each with its fee for an order of `amount` dinars. */
+export function shipOptions(country, amount) {
+  const out = [];
+  const tn = country === 'TN';
+  const fee = m => (SHIPPING[m].free > 0 && amount >= SHIPPING[m].free ? 0 : SHIPPING[m].fee);
+  if (tn && SHIPPING.tn.on) out.push({ method: 'tn', fee: fee('tn'), days: SHIPPING.tn.days, free: SHIPPING.tn.free });
+  if (tn && SHIPPING.express.on) out.push({ method: 'express', fee: fee('express'), days: SHIPPING.express.days, free: SHIPPING.express.free });
+  if (!tn && SHIPPING.intl.on && (!SHIPPING.intl.countries.length || SHIPPING.intl.countries.includes(country)))
+    out.push({ method: 'intl', fee: fee('intl'), days: SHIPPING.intl.days, free: SHIPPING.intl.free });
+  if (SHIPPING.pickup.on) out.push({ method: 'pickup', fee: 0, days: '', address: SHIPPING.pickup.address || STORE.address });
+  return out;
+}
+/** The countries a shopper can pick at checkout. */
+export const shipCountries = () => (!SHIPPING.intl.on ? ['TN'] : SHIPPING.intl.countries.length ? ['TN', ...SHIPPING.intl.countries.filter(c => c !== 'TN')] : ['TN', ...ISO.filter(c => c !== 'TN')]);
+const ISO = ('AD AE AF AG AL AM AO AR AT AU AZ BA BB BD BE BF BG BH BI BJ BN BO BR BS BT BW BY BZ CA CD CF CG CH CI CL CM CN CO CR CU CV CY CZ DE DJ DK DM DO DZ EC EE EG ER ES ET FI FJ FR GA GB GD GE GH GM GN GQ GR GT GW GY HK HN HR HT HU ID IE IL IN IQ IR IS IT JM JO JP KE KG KH KM KN KR KW KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MG MK ML MM MN MR MT MU MV MW MX MY MZ NA NE NG NI NL NO NP NZ OM PA PE PG PH PK PL PS PT PY QA RO RS RU RW SA SB SC SD SE SG SI SK SL SM SN SO SR SS ST SV SY SZ TD TG TH TJ TL TM TN TO TR TT TW TZ UA UG US UY UZ VA VC VE VN YE ZA ZM ZW').split(' ');
+export const TN_GOVS = ['Ariana', 'Béja', 'Ben Arous', 'Bizerte', 'Gabès', 'Gafsa', 'Jendouba', 'Kairouan', 'Kasserine', 'Kébili', 'Le Kef', 'Mahdia',
+  'La Manouba', 'Médenine', 'Monastir', 'Nabeul', 'Sfax', 'Sidi Bouzid', 'Siliana', 'Sousse', 'Tataouine', 'Tozeur', 'Tunis', 'Zaghouan'];
+export const TN_GOVS_AR = ['أريانة', 'باجة', 'بن عروس', 'بنزرت', 'قابس', 'قفصة', 'جندوبة', 'القيروان', 'القصرين', 'قبلي', 'الكاف', 'المهدية',
+  'منوبة', 'مدنين', 'المنستير', 'نابل', 'صفاقس', 'سيدي بوزيد', 'سليانة', 'سوسة', 'تطاوين', 'توزر', 'تونس', 'زغوان'];
+export const govLabel = g => (lang() === 'ar' && TN_GOVS.includes(g) ? TN_GOVS_AR[TN_GOVS.indexOf(g)] : g);
+export const countryName = c => { try { return new Intl.DisplayNames([lang()], { type: 'region' }).of(c); } catch { return c; } };
+export const orderTrack = o => ORDER_TRACK[o.id] || null;
+export { SHIPPING, SHIP_METHODS };
 
 /* ── payment fees ─────────────────────────────────────────────────────
    The dinar has 1000 millimes, so fees are kept to three decimals. */
@@ -199,12 +238,21 @@ export const feeLabel = method => {
    ══════════════════════════════════════════════════════════════════════ */
 export const STOCK_KEY = 'tg.stock';
 export const LOW_STOCK = 3;
-export const stock = load(STOCK_KEY, {});           // { productId: [{ code, added, order?, soldAt? }] }
+export const stock = cleanStock(load(STOCK_KEY, {}));           // { productId: [{ code, added, order?, soldAt? }] }
 const saveStock = () => save(STOCK_KEY, stock);
 
 /** Which products take keys from stock (everything but top-ups, which are credited to the game). */
-export const usesKeys = p => !!p && deliveryType(p) !== 'topup';
+export const usesKeys = p => !!p && !['topup', 'ship'].includes(deliveryType(p));
+/** A physical product, delivered to the shopper's door (or picked up). */
+export const isShipped = p => !!p && deliveryType(p) === 'ship';
 export function stockOf(id) {
+  const p = byId[id];
+  if (p && isShipped(p)) {   // physical: the units the owner counted, less what was ordered since
+    if (typeof p.qty !== 'number') return { tracked: false, available: 0, sold: 0, total: 0 };
+    const sold = state.orders.filter(o => (typeof o.date === 'number' ? o.date : Date.parse(o.date)) >= (p.qtyAt || 0) && ORDER_STATUS[o.id] !== 'cancelled')
+      .reduce((n, o) => n + o.items.filter(([i]) => i === id).reduce((m, [, q]) => m + q, 0), 0);
+    return { tracked: true, available: Math.max(0, p.qty - sold), sold, total: p.qty };
+  }
   const list = stock[id] || [];
   const available = list.filter(k => !k.order).length;
   return { tracked: list.length > 0, available, sold: list.length - available, total: list.length };
@@ -212,7 +260,7 @@ export function stockOf(id) {
 /** 'untracked' | 'in' | 'low' | 'out' */
 export function stockState(id) {
   const s = stockOf(id);
-  return !s.tracked || !usesKeys(byId[id]) ? 'untracked' : s.available === 0 ? 'out' : s.available <= LOW_STOCK ? 'low' : 'in';
+  return !s.tracked || !usesKeys(byId[id]) && !isShipped(byId[id]) ? 'untracked' : s.available === 0 ? 'out' : s.available <= LOW_STOCK ? 'low' : 'in';
 }
 /** The most of one product a shopper can have in the basket. */
 export const maxBuyable = id => (stockState(id) === 'untracked' ? 10 : Math.min(10, stockOf(id).available));
@@ -255,6 +303,14 @@ export function addKeys(id, raw) {
   emit('stock');
   return { added, dupes };
 }
+/** Take one key from stock for something sold outside checkout (the live chat). Returns the key, or ''. */
+export function takeKeyFor(id, ref) {
+  const [code] = takeKeys(id, 1, ref);
+  if (!code) return '';
+  saveStock();
+  emit('stock');
+  return code;
+}
 /** Remove a key that hasn't been sold. */
 export function removeKey(id, code) {
   const list = stock[id] || [];
@@ -269,7 +325,7 @@ export function removeKey(id, code) {
 /** Replace the whole stock (admin import). */
 export function replaceStock(next) {
   for (const k of Object.keys(stock)) delete stock[k];
-  Object.assign(stock, next || {});
+  Object.assign(stock, cleanStock(next));
   saveStock();
   emit('stock');
 }
@@ -344,7 +400,23 @@ export const noteText = n => ({
 /* ── profile & preferences ─────────────────────────────────────────── */
 export function saveProfile(patch) {
   Object.assign(state.profile, patch);
-  save('tg.profile', state.profile);
+  if (state.signedIn) save('tg.profile', state.profile);   // a guest's details are used for the order, not stored as an account
+  emit('profile');
+}
+
+/* ── session ───────────────────────────────────────────────────────── */
+/** The saved account's name, for "Sign back in as …". */
+export const savedAccountName = () => savedAccount().name;
+export function signOut() {
+  state.signedIn = false;
+  save('tg.session', 'out');
+  state.profile = { ...GUEST };
+  emit('profile');
+}
+export function signIn() {
+  state.signedIn = true;
+  save('tg.session', 'in');
+  state.profile = savedAccount();
   emit('profile');
 }
 
@@ -352,14 +424,18 @@ export function savePrefs(patch) {
   Object.assign(state.prefs, patch);
   save('tg.prefs', state.prefs);
   applyPrefs();
+  document.dispatchEvent(new Event('tg:prefs'));   // smooth.js: reduced motion on/off
 }
 
 export function applyPrefs() {
   const root = document.documentElement;
-  root.style.setProperty('--teal', state.prefs.accent);
+  root.style.setProperty('--teal', accentNow());
   root.classList.toggle('no-motion', !!state.prefs.reduceMotion);
   root.classList.toggle('still-bg', !state.prefs.animatedBg);
 }
+
+/** The colour in use: the shopper's own pick, else the store's colour. */
+export const accentNow = () => (state.prefs.accent && state.prefs.accent !== DEFAULT_PREFS.accent ? state.prefs.accent : SITE.accent || DEFAULT_PREFS.accent);
 
 export const calm = () =>
   state.prefs.reduceMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -369,31 +445,136 @@ const DELIVERY_DELAY = 6000;  // a placed demo order "arrives" after a few secon
 
 const normalise = o => {
   const when = typeof o.date === 'number' ? o.date : Date.parse(o.date);
-  const status = o.status === 'processing' && o.deliverAt && Date.now() >= o.deliverAt && !o.waiting ? 'delivered' : o.status;
+  // digital orders arrive by themselves; a physical one waits for the owner to ship and deliver it
+  const auto = o.status === 'processing' && !o.ship && o.deliverAt && Date.now() >= o.deliverAt && !o.waiting ? 'delivered' : o.status;
+  const status = ORDER_STATUS[o.id] || auto;   // the owner's say wins
   return { ...o, date: when, status };
 };
 
 export const allOrders = () => [...state.orders, ...ORDERS_SEED].map(normalise).sort((a, b) => b.date - a.date);
 export const getOrder  = id => allOrders().find(o => o.id === id);
-export const orderSubtotal = o => o.items.reduce((s, [id, q]) => s + byId[id].price * q, 0);
-export const orderFee = o => paymentFee(o.payment, orderSubtotal(o));
-export const orderTotal = o => roundMillimes(orderSubtotal(o) + orderFee(o));
+/* An order keeps the price paid for each item (a later sale doesn't change it);
+   older orders without one fall back to the current price. */
+export const unitPrice = ([id, , paid]) => (typeof paid === 'number' ? paid : byId[id].price);
+export const orderSubtotal = o => o.items.reduce((s, it) => s + unitPrice(it) * it[1], 0);
+/* Discounts: a bundle's first (an amount), then the promo code on what is left. */
+export const orderBundleOff = o => o.bundleOff || 0;
+export const orderPromoOff = o => (o.promo ? roundMillimes((orderSubtotal(o) - orderBundleOff(o)) * o.promo.pct / 100) : 0);
+export const orderDiscount = o => roundMillimes(orderBundleOff(o) + orderPromoOff(o));
+export const orderFee = o => paymentFee(o.payment, orderSubtotal(o) - orderDiscount(o));
+export const orderShip = o => o.ship?.fee || 0;
+export const orderTotal = o => roundMillimes(orderSubtotal(o) - orderDiscount(o) + orderFee(o) + orderShip(o));
+/** A mixed order's digital items arrive on their own, before the parcel. */
+export const digitalDone = o => o.status === 'delivered' || (o.status !== 'cancelled' && !!o.deliverAt && Date.now() >= o.deliverAt && !o.waiting);
+
+/* ── promo code: the one set in the admin's promo banner ───────────────── */
+const COUPON_KEY = 'tg.coupon';
+let coupon = (() => { try { return sessionStorage.getItem(COUPON_KEY) || ''; } catch { return ''; } })();
+const liveCode = () => (PROMO.code && PROMO.codePct > 0 ? PROMO.code : '');
+export const couponPct = () => (liveCode() && coupon.toUpperCase() === liveCode() ? PROMO.codePct : 0);
+export const couponCode = () => (couponPct() ? liveCode() : '');
+export const couponOff = sub => roundMillimes(sub * couponPct() / 100);
+export function applyCoupon(code) {
+  const ok = !!liveCode() && String(code).trim().toUpperCase() === liveCode();
+  if (ok) { coupon = liveCode(); try { sessionStorage.setItem(COUPON_KEY, coupon); } catch {} }
+  return ok;
+}
+export function clearCoupon() { coupon = ''; try { sessionStorage.removeItem(COUPON_KEY); } catch {} }
 export const orderCount = o => o.items.reduce((s, [, q]) => s + q, 0);
+
+/* ── privacy consent ──────────────────────────────────────────────────
+   The store keeps the basket and settings on this device only (needed for it
+   to work). Content from other companies (Google reviews) loads only once the
+   shopper allows it. 'all' | 'essential' | '' (not asked yet) */
+const CONSENT_KEY = 'tg.consent';
+export const consent = () => { try { return localStorage.getItem(CONSENT_KEY) || ''; } catch { return ''; } };
+export function setConsent(v) {
+  try { localStorage.setItem(CONSENT_KEY, v); } catch {}
+  emit('consent');
+}
+
+/* ── Google reviews (Places API, New) ─────────────────────────────────
+   The owner pastes the store's Place ID and a browser API key (restricted
+   to the store's address and to the Places API) in Page sections → Customer
+   reviews. Google returns the rating, the count and up to five reviews; they
+   are shown with their author and Google's attribution, and kept for 30
+   minutes per tab so a visit makes one request. */
+const httpsOnly = u => (typeof u === 'string' && /^https:\/\/[^\s"'<>\\]+$/.test(u) ? u : '');
+export const googleLinks = placeId => ({
+  all: `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(placeId)}`,
+  write: `https://search.google.com/local/writereview?placeid=${encodeURIComponent(placeId)}`
+});
+export async function googleReviews({ placeId, key }, language = 'en') {
+  const cacheKey = `tg.greviews.${placeId}.${language}`;
+  try { const c = JSON.parse(sessionStorage.getItem(cacheKey)); if (c && Date.now() - c.at < 30 * 60e3) return c.data; } catch {}
+  const res = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?languageCode=${encodeURIComponent(language)}`, {
+    headers: { 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'rating,userRatingCount,reviews,googleMapsUri' },
+    referrerPolicy: 'strict-origin-when-cross-origin'
+  });
+  if (!res.ok) throw new Error(`Google answered ${res.status}`);
+  const j = await res.json();
+  const data = {
+    rating: Math.round((+j.rating || 0) * 10) / 10,
+    count: Math.max(0, Math.round(+j.userRatingCount || 0)),
+    mapsUri: httpsOnly(j.googleMapsUri),
+    reviews: (Array.isArray(j.reviews) ? j.reviews : []).slice(0, 5).map(v => ({
+      name: String(v.authorAttribution?.displayName || '').slice(0, 60),
+      photo: httpsOnly(v.authorAttribution?.photoUri),
+      profile: httpsOnly(v.authorAttribution?.uri),
+      stars: Math.min(5, Math.max(1, Math.round(+v.rating || 5))),
+      text: String(v.text?.text || v.originalText?.text || '').slice(0, 1200),
+      when: String(v.relativePublishTimeDescription || '').slice(0, 40),
+      link: httpsOnly(v.googleMapsUri)
+    })).filter(r => r.name)
+  };
+  try { sessionStorage.setItem(cacheKey, JSON.stringify({ at: Date.now(), data })); } catch {}
+  return data;
+}
+
+/* ── bundles: every complete set in the basket gets the bundle's discount ── */
+const bundleItems = b => (b.items.length >= 2 && b.items.every(id => byId[id] && isListed(id)) ? b.items : null);
+export const liveBundles = () => BUNDLES.filter(bundleItems);
+export function bundleDeals(cart = state.cart) {
+  const left = { ...cart }, out = [];
+  for (const b of liveBundles()) {
+    const n = Math.min(...b.items.map(id => left[id] || 0));
+    if (n < 1) continue;
+    b.items.forEach(id => { left[id] -= n; });
+    out.push({ bundle: b, n, off: roundMillimes(n * b.items.reduce((s, id) => s + byId[id].price, 0) * b.pct / 100) });
+  }
+  return out;
+}
+export const bundleOff = (cart = state.cart) => roundMillimes(bundleDeals(cart).reduce((s, d) => s + d.off, 0));
+/** Put one of each product of a bundle in the basket (what isn't there yet). */
+export function addBundle(id) {
+  const b = liveBundles().find(x => x.id === id);
+  if (!b) return false;
+  const short = b.items.filter(pid => maxBuyable(pid) < 1);
+  if (short.length) { toast(t('stock.outToast', { name: byId[short[0]].short })); return false; }
+  const have = Math.min(...b.items.map(pid => state.cart[pid] || 0));
+  for (const pid of b.items) state.cart[pid] = Math.min(Math.max(state.cart[pid] || 0, have + 1), maxBuyable(pid));
+  save('tg.cart', state.cart);
+  emit('cart');
+  return true;
+}
 
 /** Game account details for one order. Passwords are dropped here — they
     are used for the top-up and never written to storage. */
 const stripSecrets = accounts => accounts && Object.fromEntries(Object.entries(accounts)
   .map(([sub, { password, ...rest }]) => [sub, rest]));
 
-export function placeOrder({ name, email, phone, payment, accounts }) {
+export function placeOrder({ name, email, phone, payment, accounts, ship }) {
   const next = 1043 + state.orders.length;
   const order = {
     id: `TG-${next}`,
     date: Date.now(),
-    items: Object.entries(state.cart),
+    items: Object.entries(state.cart).map(([id, q]) => [id, q, byId[id].price]),
+    promo: couponPct() ? { code: couponCode(), pct: couponPct() } : undefined,
+    bundleOff: bundleOff() || undefined,
     status: 'processing',
     deliverAt: Date.now() + DELIVERY_DELAY,
     payment, accounts: stripSecrets(accounts),
+    ship: ship || undefined,
     contact: { name, email, phone }
   };
   // payment succeeded: hand out real keys from stock
@@ -408,6 +589,7 @@ export function placeOrder({ name, email, phone, payment, accounts }) {
   state.orders.unshift(order);
   save('tg.orders', state.orders);
   clearCart();
+  clearCoupon();
   emit('orders');
   return order;
 }
@@ -418,6 +600,7 @@ export const topupMethod = p => p.topup || (p.cat === 'mobile' && TOPUP_METHOD[p
 
 export function deliveryType(p) {
   if (p.delivery) return p.delivery;   // set by the store owner on products they add
+  if (p.cat === 'hardware') return 'ship';
   if (p.cat === 'mobile' || p.sub === 'topups' || p.sub === 'apps') return 'topup';
   if (p.cat === 'cards') return 'code';
   if (p.tags.some(tag => /account/i.test(tag))) return 'account';
@@ -494,26 +677,89 @@ export function searchProducts(query) {
    Boxes marked data-adapt take the picture's own shape instead.
    A ResizeObserver re-checks when the box changes size.
    ══════════════════════════════════════════════════════════════════════ */
-export const media = (p, cls = '', { adapt = false, eager = false, alt = '', mode = '' } = {}) =>
-  `<div class="media${cls ? ' ' + cls : ''}" data-fit="auto"${adapt ? ' data-adapt="1"' : ''}${mode ? ` data-mode="${mode}"` : ''}>` +
-  `<img class="m-bg" src="${p.img}" alt="" aria-hidden="true" decoding="async"${eager ? '' : ' loading="lazy"'}>` +
-  `<img class="m-fg" src="${p.img}" alt="${esc(alt)}" decoding="async"${eager ? '' : ' loading="lazy"'}></div>`;
+/* Full-bleed artwork is never transparent — only a PNG (e.g. an upload in the admin) might be. */
+const opaque = p => p.kind === 'art' && !/^data:image\/png|\.png(\?|$)/i.test(p.img || '');
+/* ══════════════════════════════════════════════════════════════════════
+   Product videos (p.video: { hd, sd })
+   A silent looping clip over the product's picture: full HD on big or sharp
+   screens, 720p on phones and slow connections. Loaded only when it is about
+   to play; the picture shows meanwhile. Reduced motion or data saver: the
+   picture only. Every video has a pause button (WCAG 2.2.2).
+   ══════════════════════════════════════════════════════════════════════ */
+const net = () => navigator.connection || {};
+export const canPlayVideo = () => !calm() && !net().saveData;
+export function videoSrc(p) {
+  const v = p?.video;
+  if (!v) return '';
+  // full HD for wide or sharp computer screens; phones and tablets (touch) get 720p
+  const wide = innerWidth * Math.min(devicePixelRatio || 1, 2) >= 1600;
+  const touch = matchMedia('(hover: none) and (pointer: coarse)').matches;
+  const big = wide && !touch && !/(^|-)2g|3g/.test(net().effectiveType || '');
+  return srcOf((big && v.hd) || v.sd || v.hd || '');   // an uploaded video resolves to its stored file
+}
+export const videoTag = p => (p?.video && canPlayVideo() && videoSrc(p)
+  ? `<video class="m-video" muted loop playsinline disablepictureinpicture disableremoteplayback preload="none" data-src="${esc(videoSrc(p))}" aria-hidden="true"></video>` : '');
+const userPaused = new WeakSet();   // a video the shopper paused stays paused
+export function playVideo(v) {
+  if (!v || userPaused.has(v)) return;
+  if (!v.getAttribute('src')) {
+    v.src = v.dataset.src;
+    // show the video only once a real frame is on screen: phones (iOS, in-app browsers) say "playing"
+    // before any picture arrives, which left a black box over the cover photo on slow connections
+    const shown = () => v.classList.add('playing');
+    if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(shown);
+    else v.addEventListener('timeupdate', function first() { if (v.currentTime > 0.05) { shown(); v.removeEventListener('timeupdate', first); } });
+  }
+  v.play().catch(() => {});
+}
+export const pauseVideo = v => { if (v && !v.paused) v.pause(); };
+export const videoToggle = () => `<button type="button" class="vid-toggle" data-vid-toggle aria-pressed="false" aria-label="${esc(t('video.pause'))}">${ICON.pause}</button>`;
+/** The pause / play button toggles the video(s) next to it. */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-vid-toggle]');
+  if (!b) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const box = b.closest('.has-video') || b.parentElement;
+  const pause = b.getAttribute('aria-pressed') !== 'true';
+  for (const v of box.querySelectorAll('video.m-video')) {
+    if (pause) { userPaused.add(v); v.pause(); } else { userPaused.delete(v); playVideo(v); }
+  }
+  b.setAttribute('aria-pressed', String(pause));
+  b.setAttribute('aria-label', t(pause ? 'video.play' : 'video.pause'));
+  b.innerHTML = pause ? ICON.play : ICON.pause;
+}, true);
 
+export const media = (p, cls = '', { adapt = false, eager = false, alt = '', mode = '' } = {}) =>
+  `<div class="media${cls ? ' ' + cls : ''}" data-fit="auto"${adapt ? ' data-adapt="1"' : ''}${mode ? ` data-mode="${mode}"` : ''}${opaque(p) ? ' data-opaque="1"' : ''}>` +
+  `<img class="m-bg" src="${srcOf(p.img)}" alt="" aria-hidden="true" decoding="async"${eager ? '' : ' loading="lazy"'}>` +
+  `<img class="m-fg" src="${srcOf(p.img)}" alt="${esc(alt)}" decoding="async"${eager ? '' : ' loading="lazy"'}></div>`;
+
+/* Transparency is read once per picture, on one shared canvas. Photos imported
+   from the store (and anything served as JPEG) can't be transparent at all. */
+const alphaOf = new Map();
+let probe = null;
 function hasAlpha(img) {
-  try {
-    const c = document.createElement('canvas');
-    c.width = c.height = 12;
-    const x = c.getContext('2d', { willReadFrequently: true });
-    x.drawImage(img, 0, 0, 12, 12);
-    const d = x.getImageData(0, 0, 12, 12).data;
-    return [0, 11, 132, 143].filter(i => d[i * 4 + 3] < 16).length >= 3;   // three transparent corners
-  } catch { return false; }   // cross-origin pixels can't be read: treat as opaque
+  const src = img.currentSrc || img.src;
+  if (alphaOf.has(src)) return alphaOf.get(src);
+  let alpha = false;
+  if (!/\/products\/live\/|\.jpe?g(\?|$)/i.test(src)) {
+    try {
+      probe ??= document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+      probe.canvas.width = probe.canvas.height = 12;
+      probe.drawImage(img, 0, 0, 12, 12);
+      const d = probe.getImageData(0, 0, 12, 12).data;
+      alpha = [0, 11, 132, 143].filter(i => d[i * 4 + 3] < 16).length >= 3;   // three transparent corners
+    } catch { alpha = false; }   // cross-origin pixels can't be read: treat as opaque
+  }
+  alphaOf.set(src, alpha);
+  return alpha;
 }
 
 export function fitBox(box) {
   const img = box.querySelector('.m-fg');
   if (!img || !img.naturalWidth) return;
-  if (box._alpha === undefined) box._alpha = hasAlpha(img);
+  if (box._alpha === undefined) box._alpha = box.dataset.opaque ? false : hasAlpha(img);
   const ir = img.naturalWidth / img.naturalHeight;
   if (box.dataset.adapt) {
     box.style.aspectRatio = String(Math.min(1.8, Math.max(0.7, ir)));
@@ -556,19 +802,26 @@ export const heartBtn = (p, cls = 'tile-heart') => {
 export const tile = (p, i = 0) => `
   <article class="tile${stockState(p.id) === 'out' ? ' is-out' : ''}" data-view="${p.id}" style="--d:${Math.min(i, 12) * 45}ms;--vt:tile-${p.id}">
     ${media(p, 'shot')}
-    <span class="tile-tag">${esc(stockState(p.id) === 'out' ? t('stock.out') : word(p.badge || p.tags[1] || p.tags[0]))}</span>
+    ${p.sale && stockState(p.id) !== 'out' ? `<span class="tile-tag sale">${esc(t('deal.off', { n: p.sale.pct }))}</span>` : `<span class="tile-tag">${esc(stockState(p.id) === 'out' ? t('stock.out') : word(p.badge || p.tags[1] || p.tags[0]))}</span>`}
     ${heartBtn(p)}
     <div class="tile-body">
       <div class="txt">
         <h3>${esc(p.short)}</h3>
         <p>${esc(blurb(p))}</p>
-        <span class="px">${tnd(p.price)}</span>
+        <span class="px">${tnd(p.price)}${p.was ? ` <s>${tnd(p.was)}</s>` : ''}</span>
       </div>
       ${stockState(p.id) === 'out' ? '' : `<button class="round" data-add="${p.id}" aria-label="${esc(t('buy.addNamed', { name: p.short }))}">${ICON.plus}</button>`}
     </div>
   </article>`;
 
 /** One tile for a whole brand: lead photo, "From 40 DT", number of options. */
+/** A game's versions in a line: "PC, PlayStation 5 · Key / Account". */
+const gameSummary = vs => {
+  const plats = ['pc', 'xbox', 'ps5'].filter(pl => vs.some(v => v.platform === pl)).map(pl => t('plat.' + pl));
+  const kinds = ['key', 'account'].filter(k => vs.some(v => versionKind(v) === k)).map(k => t('kind.' + k));
+  return `${plats.join(', ')} · ${kinds.join(' / ')}`;
+};
+
 export const familyTile = (fam, i = 0) => {
   const vs = familyVariants(fam), p = vs[0], low = Math.min(...vs.map(v => v.price)), name = p.game ? p.short : subLabel(fam);
   if (vs.length < 2) return tile(p, i);
@@ -579,7 +832,7 @@ export const familyTile = (fam, i = 0) => {
     <div class="tile-body">
       <div class="txt">
         <h3>${esc(name)}</h3>
-        <p><bdi>${esc(vs.slice(0, 3).map(valueOf).join(' · '))}${vs.length > 3 ? ' …' : ''}</bdi></p>
+        <p><bdi>${esc(p.game ? gameSummary(vs) : vs.slice(0, 3).map(valueOf).join(' · ') + (vs.length > 3 ? ' …' : ''))}</bdi></p>
         <span class="px">${esc(t('fam.from', { price: tnd(low) }))}</span>
       </div>
       <button class="round" data-view="${p.id}" aria-label="${esc(t('fam.open', { name }))}">${ICON.chev}</button>
@@ -644,11 +897,15 @@ export function resetEverything() {
    basket and wishlist entries that are no longer sold, and tells the shell
    to redraw (tabs, menus, the current page). */
 
-export function commitAdmin(record) {
+export function commitAdmin(record, { remote = false } = {}) {
+  record = cleanAdmin(record);
+  // the live site: the edit goes to the shared store too (another admin's edit arriving is not sent back)
+  if (!remote) pushRecord(record).then(ok => { if (!ok) toast(t('sync.failed')); });
   try { localStorage.setItem(ADMIN_KEY, JSON.stringify(record)); }
   catch { toast(t('adm.full')); return false; }
   applyAdmin(record);
   reindex();
+  applyPrefs();
   let changed = false;
   for (const id of Object.keys(state.cart)) if (!isListed(id)) { delete state.cart[id]; changed = true; }
   for (const id of [...state.wish]) if (!isListed(id)) { state.wish.delete(id); changed = true; }

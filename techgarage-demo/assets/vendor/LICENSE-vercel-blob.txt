@@ -1,0 +1,2 @@
+Vercel Blob client (upload) — @vercel/blob 2.9.0, bundled with esbuild for the browser.
+Licensed under the Apache License 2.0: https://github.com/vercel/storage/blob/main/LICENSE

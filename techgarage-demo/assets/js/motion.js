@@ -6,7 +6,8 @@
    Everything here steps aside when the shopper (or their device) asks for
    reduced motion. */
 
-import { calm, esc } from './core.js?v=20261124t';
+import { calm, esc } from './core.js?v=20261129d';
+import { scrollScenes } from './smooth.js?v=20261129d';
 
 /** Is rich motion wanted right now? Also mirrored as html.motion for the CSS. */
 export function motionOn() {
@@ -55,10 +56,11 @@ export function introduce(view) {
 
 /* ── further down: content fades up as it scrolls into view ──────────── */
 let watcher = null;
-const REVEAL = '.grid-tiles > *, .block, .order-row, .adm-card, .adm-row, .faq details, .set-row';
+const REVEAL = '.grid-tiles > *, .block, .home-block, .ticker, .order-row, .adm-card, .adm-row, .faq details, .set-row';
 
 export function revealOnScroll(view) {
   watcher?.disconnect();
+  if (scrollScenes(view)) return;   // GSAP ScrollTrigger + Lenis (smooth.js); below is the no-library fallback
   if (!motionOn() || !('IntersectionObserver' in window)) return;
   watcher = new IntersectionObserver(entries => {
     let n = 0;
@@ -69,7 +71,7 @@ export function revealOnScroll(view) {
       el.classList.add('in');
       watcher.unobserve(el);
       // hand the element back to its own hover / press transitions afterwards
-      setTimeout(() => el.classList.remove('reveal', 'in'), 1300 + n * 60);
+      setTimeout(() => { el.classList.remove('reveal', 'in'); el.classList.add('revealed'); }, 1300 + n * 60);
     }
   }, { rootMargin: '0px 0px -6% 0px' });
   const below = innerHeight * 0.96;

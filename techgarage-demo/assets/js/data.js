@@ -3,6 +3,13 @@
    Digital goods only: PC games, gift cards, mobile top-ups and software.
    Prices are in Tunisian dinar and rendered in the store's own format. */
 
+import { LIVE, GAME_OF } from './catalog.js?v=20261129d';
+import { ART, KIND } from './brand-art.js?v=20261129d';
+import { APPS } from './appstore.js?v=20261129d';
+import { STEAM } from './steam.js?v=20261129d';
+import { cleanAdmin } from './guard.js?v=20261129d';
+import { PUBLISHED_RECORD } from './store-record.js?v=20261129d';
+
 const P = 'assets/products/';
 const S = 'https://techgarage.tn/';   /* each product's page on the live store */
 
@@ -36,6 +43,7 @@ export const PRODUCTS = [
     img: P + 'elden-ring-fresh-steam-account.webp',
     tags: ['Fresh Steam Account', 'RPG'],
     blurb: 'The Lands Between, on a fresh account. One of the store’s steadiest sellers.',
+    guide: "## What you get\nA fresh Steam account with **Elden Ring** already on it. You get the account's email and password after checkout.\n\n## First steps\n1. Sign in to Steam with the details from your order\n2. Change the password right away\n3. Add your own email and turn on **Steam Guard**\n4. Download the game and play\n\n## Good to know\n- Play online and offline, with your own saves\n- Do not share the account with anyone",
     specs: ['Steam', 'Base game', 'Instant delivery']
   },
   {
@@ -126,7 +134,10 @@ export const PRODUCTS = [
     img: P + 'minecraft-java-bedrock-edition-pc-windows-store-key-global.webp',
     tags: ['Fresh Account', 'Sandbox'],
     blurb: 'Both editions on one account, through the Windows Store.',
-    specs: ['Java + Bedrock', 'Windows', 'Instant delivery']
+    specs: ['Java + Bedrock', 'Windows', 'Instant delivery'],
+    /* wide key art at the top of the page; the crop keeps the two heroes on the bridge in view */
+    video: { hd: 'assets/videos/minecraft-hd.mp4', sd: 'assets/videos/minecraft-sd.mp4' },   // 8 s silent loop, 1080p / 720p
+    banner: { focus: '74% 62%', srcset: [[P + 'banners/minecraft-640.webp', 640], [P + 'banners/minecraft-1280.webp', 1280], [P + 'banners/minecraft-1672.webp', 1672]] }
   },
 
   /* ---- Gift cards ---------------------------------------------------- */
@@ -135,8 +146,9 @@ export const PRODUCTS = [
     name: 'Steam Wallet Gift Card 20 USD Steam Key',
     short: 'Steam Wallet 20 USD', price: 78, cat: 'cards', sub: 'steam', kind: 'art',
     img: P + 'steam-wallet-gift-card-20-usd-steam-key.webp',
-    tags: ['Gift Card', 'Steam'], badge: 'Best seller',
+    tags: ['Steam', 'Gift Card'], badge: 'Best seller',
     blurb: 'Twenty dollars of Steam wallet, delivered as a key.',
+    guide: "## How to redeem\n1. Open Steam and sign in to your account\n2. Click your name at the top right, then **Wallet**\n3. Click **Add funds**, then **Redeem a Steam Gift Card or Wallet Code**\n4. Paste the code from your order and confirm\n\n## Good to know\n- The card is in US dollars: it works on accounts whose wallet is in USD\n- The balance never expires\n- Keep your order email until the code is redeemed",
     specs: ['Steam', '20 USD', 'Instant delivery']
   },
   {
@@ -144,7 +156,7 @@ export const PRODUCTS = [
     name: 'Steam Wallet Gift Card 50 USD Steam Key',
     short: 'Steam Wallet 50 USD', price: 190, cat: 'cards', sub: 'steam', kind: 'art',
     img: P + 'steam-wallet-gift-card-50-usd.webp',
-    tags: ['Gift Card', 'Steam'],
+    tags: ['Steam', 'Gift Card'],
     blurb: 'Fifty dollars of Steam wallet — enough for a new release and change.',
     specs: ['Steam', '50 USD', 'Instant delivery']
   },
@@ -153,8 +165,9 @@ export const PRODUCTS = [
     name: 'PlayStation Network Card 20 EUR (FR) PSN Key FRANCE',
     short: 'PlayStation 20 EUR (FR)', price: 80, cat: 'cards', sub: 'playstation', kind: 'art',
     img: P + 'psn-card-20-eur-france.webp',
-    tags: ['Gift Card', 'PlayStation'],
+    tags: ['PlayStation', 'Gift Card'],
     blurb: 'Twenty euros of PSN credit for French-region accounts.',
+    guide: "## How to redeem\n1. On your PS5, go to **Settings**, then **Users and Accounts**\n2. Open **Account**, then **Payment and Subscriptions**\n3. Choose **Redeem Codes** and type the 12-character code\n4. The 20 EUR lands in your PlayStation wallet straight away\n\n## Good to know\n- For **French** PlayStation accounts only\n- You can also redeem it on the PlayStation website or app",
     specs: ['PSN', '20 EUR', 'France']
   },
   {
@@ -162,8 +175,9 @@ export const PRODUCTS = [
     name: 'Apple iTunes Gift Card 20 USD iTunes Key UNITED STATES',
     short: 'Apple iTunes 20 USD', price: 78, cat: 'cards', sub: 'itunes', kind: 'art',
     img: P + 'apple-itunes-gift-card-20-usd.webp',
-    tags: ['Gift Card', 'Apple'],
+    tags: ['Apple', 'Gift Card'],
     blurb: 'Twenty dollars of App Store and iTunes credit for US accounts.',
+    guide: "## How to redeem\n1. On your iPhone, open the **App Store**\n2. Tap your picture at the top, then **Redeem Gift Card or Code**\n3. Tap **Enter Code Manually** and paste your code\n\n## Good to know\n- For **United States** Apple accounts only\n- Works for apps, games, iCloud+, Apple Music and more",
     specs: ['Apple', '20 USD', 'United States']
   },
   {
@@ -171,7 +185,7 @@ export const PRODUCTS = [
     name: 'VALORANT Gift Card 20 EUR — EUROPE',
     short: 'VALORANT 20 EUR', price: 74, cat: 'cards', sub: 'valorant', kind: 'art',
     img: P + 'valorant-gift-card-20-eur-europe.webp',
-    tags: ['Gift Card', 'Riot'],
+    tags: ['Riot', 'Gift Card'],
     blurb: 'Valorant Points for the European region.',
     specs: ['Riot', '20 EUR', 'Europe']
   },
@@ -180,7 +194,7 @@ export const PRODUCTS = [
     name: 'League of Legends Gift Card 20€ Riot Key — EUROPE',
     short: 'League of Legends 20 EUR', price: 74, cat: 'cards', sub: 'lol', kind: 'art',
     img: P + 'league-of-legends-gift-card-20-eur.webp',
-    tags: ['Gift Card', 'Riot'],
+    tags: ['Riot', 'Gift Card'],
     blurb: 'Riot Points for League of Legends on European servers.',
     specs: ['Riot', '20 EUR', 'Europe']
   },
@@ -191,7 +205,7 @@ export const PRODUCTS = [
     name: 'EFOOTBALL 1000 Coins',
     short: 'eFootball 1000 Coins', price: 35, cat: 'mobile', sub: 'efootball', kind: 'art',
     img: P + 'efootball-1000-coins.webp',
-    tags: ['Top-up', 'eFootball'],
+    tags: ['eFootball', 'Top-up'],
     blurb: 'A thousand eFootball coins, credited straight to your account.',
     specs: ['eFootball 2027', '1000 coins', 'Fast top-up']
   },
@@ -200,7 +214,7 @@ export const PRODUCTS = [
     name: 'EFOOTBALL 5000 Coins',
     short: 'eFootball 5000 Coins', price: 160, cat: 'mobile', sub: 'efootball', kind: 'art',
     img: P + 'efootball-5000-coins.webp',
-    tags: ['Top-up', 'eFootball'], badge: 'Best value',
+    tags: ['eFootball', 'Top-up'], badge: 'Best value',
     blurb: 'The big pack — five thousand coins for the new season.',
     specs: ['eFootball 2027', '5000 coins', 'Fast top-up']
   },
@@ -209,7 +223,7 @@ export const PRODUCTS = [
     name: 'PUBG Mobile 3850 UC',
     short: 'PUBG Mobile 3850 UC', price: 190, cat: 'mobile', sub: 'pubg', kind: 'art',
     img: P + 'pubg-mobile-3850-uc.webp',
-    tags: ['Top-up', 'PUBG Mobile'],
+    tags: ['PUBG Mobile', 'Top-up'],
     blurb: '3850 Unknown Cash, topped up by player ID.',
     specs: ['PUBG Mobile', '3850 UC', 'By player ID']
   },
@@ -869,14 +883,20 @@ export const PRODUCTS = [
   }
 ];
 
+/* …and the rest of the store's games, gift cards, top-ups and software, imported
+   from techgarage.tn by scripts/import_catalogue.py (see catalog.js). */
+for (const p of LIVE) PRODUCTS.push({ kind: 'art', ...p, url: S + p.url });
+
+export const HW_SUBS = ['pcs', 'monitors', 'keyboards', 'mice', 'headsets', 'controllers', 'chairs', 'mousepads', 'gpu', 'cpu', 'motherboards', 'ram', 'storage', 'psu', 'cases', 'cooling', 'cables', 'printers', 'combos'];   // hardware sub-categories, in menu order
 export const CATEGORIES = [
   { id: 'all' },
-  { id: 'games',    subs: ['accounts', 'keys', 'topups', 'ps'] },
+  { id: 'games',    subs: ['accounts', 'keys', 'topups', 'ps', 'xboxgames'] },
   { id: 'cards',    grouped: true, subs: ['steam', 'playstation', 'itunes', 'xbox', 'valorant', 'lol', 'fortnite', 'razer', 'nintendo',
                            'battlenet', 'marvel', 'epic', 'binance', 'redotpay', 'bybit', 'ufl'] },
   { id: 'mobile',   grouped: true, subs: ['efootball', 'pubg', 'freefire', 'codm', 'coc', 'clashroyale', 'brawlstars', 'roblox', 'genshin',
                            'wildrift', 'fcmobile', 'mlbb', 'hsr', 'wuwa', 'whiteout', 'bloodstrike', 'warzone'] },
-  { id: 'software', subs: ['licenses', 'apps'] }
+  { id: 'software', subs: ['licenses', 'apps'] },
+  { id: 'hardware', subs: HW_SUBS.filter(sub => PRODUCTS.some(p => p.cat === 'hardware' && p.sub === sub)) }   // physical products, shipped
 ];
 
 /* Subcategory names that are brands read the same in every language;
@@ -892,7 +912,7 @@ export const SUB_NAMES = {
 };
 
 /* Hero carousel — ids resolved against PRODUCTS */
-export const HERO = ['bo7', 'elden-ring', 'fc27', 'ac-shadows', 'wukong'];
+export const HERO = ['minecraft', 'bo7', 'elden-ring', 'fc27', 'ac-shadows', 'wukong'];
 
 /* Left column: newest arrivals */
 export const NEW_DROPS = ['nba2k26', 'fc27', 'efootball-5000', 'f1-2025', 'split-fiction', 'steam-50'];
@@ -934,15 +954,18 @@ export const ORDERS_SEED = [
 ];
 
 /* ClicToPay is the gateway techgarage.tn shows (bank cards: Visa, Mastercard,
-   CIB, e-Dinar). D17 and bank transfer are common in Tunisia — confirm with the store. */
-export const PAYMENT_METHODS = ['clictopay', 'd17', 'transfer'];   // names in i18n.js
+   e-Dinar). D17 and bank transfer are common in Tunisia — confirm with the store. */
+export const PAYMENT_METHODS = ['clictopay', 'cardintl', 'd17', 'ooredoo', 'transfer', 'cod'];   // cod: only for physical orders in Tunisia   // names in i18n.js
 
 /* What each method adds to the order: a percentage of the subtotal, or a flat
    amount in dinars. Shown on the option and as its own line in the summary. */
 export const PAYMENT_FEES = {
-  clictopay: { pct: 2.5 },   // bank fees
+  clictopay: { pct: 2.5 },   // bank fees, card issued in Tunisia
+  cardintl:  { pct: 3.5 },   // bank fees, card issued abroad (Visa / Mastercard)
   d17:       { pct: 1 },
-  transfer:  { flat: 5 }
+  ooredoo:   { pct: 15 },   // Ooredoo Pay: paid from Ooredoo mobile credit
+  transfer:  { flat: 5 },
+  cod:       { flat: 0 }    // cash on delivery
 };
 
 /* How each mobile game is topped up. Some publishers credit by player ID;
@@ -969,6 +992,9 @@ export const STORE = {
   name: 'TechGarage',
   domain: 'techgarage.tn',
   phone: '+216 58 578 111',
+  legalName: 'TechGarage',   // the registered business name, for the legal pages and footer
+  regNo: '',                 // company registration (RNE) number
+  taxId: '',                 // tax ID (matricule fiscal)
   email: 'Commercial@techgarage.site',
   address: 'Rue Hssan Achoura, 5100 Mahdia, Tunisia',
   hours: [
@@ -978,6 +1004,10 @@ export const STORE = {
   ]
 };
 
+
+const STORE_SHIPPED = JSON.parse(JSON.stringify(STORE));
+export const FEES_SHIPPED = JSON.parse(JSON.stringify(PAYMENT_FEES));
+export const METHODS_SHIPPED = [...PAYMENT_METHODS];
 
 /* ══════════════════════════════════════════════════════════════════════
    Store owner's edits (admin dashboard)
@@ -995,12 +1025,69 @@ const copy = v => JSON.parse(JSON.stringify(v));
    page with a platform and key/account picker; every game has its own page.
    Fresh accounts and keys on techgarage.tn are PC (Steam / Ubisoft); the
    PlayStation games are PS5. Top-ups aren't game versions. */
-const GAME_PLATFORM = { accounts: 'pc', keys: 'pc', ps: 'ps5' };
+const GAME_PLATFORM = { accounts: 'pc', keys: 'pc', ps: 'ps5', xboxgames: 'xbox' };
 for (const p of PRODUCTS) {
   if (p.cat !== 'games' || !GAME_PLATFORM[p.sub]) continue;
-  p.game ??= p.id.replace(/^ps-/, '');
+  p.game ??= GAME_OF[p.id] ?? p.id.replace(/^ps-/, '');
   p.platform ??= GAME_PLATFORM[p.sub];
 }
+
+/* Steam media for every game (steam.js, made by scripts/enrich_from_steam.py):
+   screenshots for the photo strip, the wide banner (also the blurred page
+   background), the trailer over the main picture and, on PC versions, the
+   system requirements. A product's own media and the owner's edits win. */
+const STEAM_IMG = 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/';
+const STEAM_MOV = 'https://cdn.akamai.steamstatic.com/steam/apps/';
+for (const p of PRODUCTS) {
+  const s = p.cat === 'games' && p.game && STEAM[p.game];
+  if (!s) continue;
+  if (!p.gallery && s.s?.length) p.gallery = s.s.map(h => `${STEAM_IMG}${s.a}/${s.n ? h + '/' : ''}ss_${h}.1920x1080.jpg`);
+  if (!p.wall && s.h) { p.wall = `${STEAM_IMG}${s.a}/library_hero.jpg`; if (!p.banner) p.wallBg ??= true; }
+  if (!p.video && s.v) p.video = { sd: `${STEAM_MOV}${s.v}/movie480_vp9.webm`, ...(s.vh ? { hd: `${STEAM_MOV}${s.v}/movie_max_vp9.webm` } : {}) };
+  if (!p.sysreq && s.r && p.platform === 'pc') p.sysreq = s.r;
+}
+/* Gift cards, top-ups, software, hardware and the games Steam has no banner for:
+   a generated banner (scripts/brand_banners.py, keyed in brand-art.js) as its own
+   block and the blurred page background; and, for brands that are games on Steam,
+   that game's photos and trailer. (Other packs' pictures stay off the photo strip:
+   they show other amounts.) */
+for (const p of PRODUCTS) {
+  const key = ART[p.id];
+  if (!key) continue;
+  if (!p.wall) { p.wall = `assets/products/brands/${key}.webp`; if (!p.banner) p.wallBg ??= true; }
+  if (p.gallery || p.cat === 'hardware') continue;
+  const s = p.cat === 'cards' || p.cat === 'mobile' ? STEAM['sub:' + p.sub] : null;
+  const steam = s?.s?.length ? s.s.map(h => `${STEAM_IMG}${s.a}/${s.n ? h + '/' : ''}ss_${h}.1920x1080.jpg`) : [];
+  const app = key.startsWith('as-') ? APPS[key.slice(3)] : null;   // official App Store screenshots
+  const g = steam.length ? steam : app?.s || [];
+  if (g.length) p.gallery = g;
+  if (!p.video && s?.v) p.video = { sd: `${STEAM_MOV}${s.v}/movie480_vp9.webm`, ...(s.vh ? { hd: `${STEAM_MOV}${s.v}/movie_max_vp9.webm` } : {}) };
+}
+
+/* Facts for the Details table: who makes it, what it runs on, its currency. */
+const MOBILE_ONLY = ['Android', 'iOS'];
+export const BRAND_INFO = {
+  efootball: { pub: 'Konami', on: ['Android', 'iOS', 'PC', 'PlayStation', 'Xbox'], cur: 'eFootball Coins' },
+  pubg: { pub: 'Level Infinite (Tencent)', on: MOBILE_ONLY, cur: 'UC' }, freefire: { pub: 'Garena', on: MOBILE_ONLY, cur: 'Diamonds' },
+  codm: { pub: 'Activision', on: MOBILE_ONLY, cur: 'COD Points (CP)' }, coc: { pub: 'Supercell', on: MOBILE_ONLY, cur: 'Gems' },
+  clashroyale: { pub: 'Supercell', on: MOBILE_ONLY, cur: 'Gems' }, brawlstars: { pub: 'Supercell', on: MOBILE_ONLY, cur: 'Gems' },
+  roblox: { pub: 'Roblox Corporation', on: ['Android', 'iOS', 'PC', 'Xbox', 'PlayStation'], cur: 'Robux' },
+  genshin: { pub: 'HoYoverse', on: ['Android', 'iOS', 'PC', 'PlayStation'], cur: 'Genesis Crystals' },
+  wildrift: { pub: 'Riot Games', on: MOBILE_ONLY, cur: 'Wild Cores' }, fcmobile: { pub: 'EA Sports', on: MOBILE_ONLY, cur: 'FC Points' },
+  mlbb: { pub: 'Moonton', on: MOBILE_ONLY, cur: 'Diamonds' }, hsr: { pub: 'HoYoverse', on: ['Android', 'iOS', 'PC', 'PlayStation'], cur: 'Oneiric Shards' },
+  wuwa: { pub: 'Kuro Games', on: ['Android', 'iOS', 'PC', 'PlayStation'], cur: 'Lunites' },
+  whiteout: { pub: 'Century Games', on: MOBILE_ONLY, cur: 'Packs & Frost Stars' }, bloodstrike: { pub: 'NetEase Games', on: ['Android', 'iOS', 'PC'], cur: 'Golds' },
+  warzone: { pub: 'Activision', on: MOBILE_ONLY, cur: 'COD Points (CP)' },
+  steam: { on: ['PC (Steam)'] }, playstation: { on: ['PS5', 'PS4', 'PlayStation Store'] }, itunes: { on: ['iPhone', 'iPad', 'Mac', 'Apple TV'] },
+  xbox: { on: ['Xbox Series X|S', 'Xbox One', 'Windows PC'] }, nintendo: { on: ['Nintendo Switch'] }, epic: { on: ['PC (Epic Games Store)'] },
+  fortnite: { on: ['PC', 'PlayStation', 'Xbox', 'Switch', 'Mobile'] }, lol: { on: ['PC'] }, valorant: { on: ['PC', 'PlayStation', 'Xbox'] },
+  razer: { on: ['PC', 'Mobile'] }, battlenet: { on: ['PC (Battle.net)'] }, marvel: { on: ['PC', 'PlayStation', 'Xbox'] }, ufl: { on: ['PlayStation', 'Xbox'] },
+  binance: { on: ['Binance app'] }, bybit: { on: ['Bybit app'] }, redotpay: { on: ['RedotPay app'] },
+  'sw-windows': { on: ['Windows PC'] }, 'sw-office': { on: ['Windows PC', 'Mac'] }, 'sw-security': { on: ['Windows', 'Mac', 'Android', 'iOS'] },
+  'sw-vpn': { on: ['Windows', 'Mac', 'Android', 'iOS'] }, 'sw-subs': { on: ['TV', 'Phone', 'PC', 'Tablet'] }, 'sw-ai': { on: ['Web', 'Android', 'iOS'] },
+  'sw-creative': { on: ['Windows', 'Mac'] }, 'sw-tools': { on: ['Windows PC'] }
+};
+export { ART, KIND };
 export const PLATFORMS = ['pc', 'xbox', 'ps5'];
 
 const SHIPPED = copy({ PRODUCTS, CATEGORIES, SUB_NAMES, HERO, NEW_DROPS });
@@ -1012,16 +1099,107 @@ export const RETIRED = [];
 export const CAT_NAMES = {};
 /* What each page section shows. hidden: { key: true }, titles: { key: { en, fr, ar } },
    shelf: product ids, or empty for the automatic pick. */
-export const PAGE_SECTIONS = { hidden: {}, titles: {}, shelf: [] };
+export const PAGE_SECTIONS = { hidden: {}, titles: {}, shelf: [], ticker: [], picks: [], best: [] };
+
+/* Home page extras. The owner changes all of these in Store admin → Promotions
+   (banner, code, sales) and → Page sections (rolling bar, picks, rows). */
+export const PROMO = {};    // the promo banner and its checkout code
+export const SALES = {};    // { productId: { pct, until } } — live sale prices
+/* The owner's own wording and settings (Store admin → Store settings, Texts, Orders) */
+export const TEXTS = {};        // { key: { en, fr, ar } } — any phrase on the site, reworded
+export const FAQ_OVR = {};      // { en: [[question, answer]…], fr: […], ar: […] }
+export const SITE = {};         // { accent: '#rrggbb' } — the store's colour for visitors who haven't picked one
+export const ORDER_STATUS = {};
+export const ORDER_TRACK = {};   // { orderId: { carrier, number } } — physical orders, set by the owner // { orderId: 'processing' | 'delivered' | 'cancelled' } — set by the owner
+/* Shop mode. "preview": on a hosted copy (e.g. Vercel) a bar says the store is
+   a preview and checkout is off, because orders and payments need a server
+   that doesn't exist yet. On this computer (localhost or the file) everything
+   works as usual for testing. Change to "live" once orders reach a real server. */
+export const SHOP_MODE = 'preview';
+/* Other currencies prices can be shown in: 1 TND = rate × currency. Payment
+   is always taken in Tunisian dinars; other currencies are an estimate. */
+export const CURRENCY_RATES = {};
+/* Delivery of physical products (delivery: 'ship'), set in Store admin → Shipping.
+   Fees in dinars; free = the order amount from which delivery is free (0 = never);
+   days = the delivery time shown to shoppers; countries = ISO codes served abroad
+   ([] = everywhere). Cash on delivery is a payment method (Payment methods card). */
+export const SHIPPING_DEFAULTS = {
+  tn:      { on: true,  fee: 8,  free: 300, days: '24–72 h' },
+  express: { on: false, fee: 15, free: 0,   days: '24 h' },
+  intl:    { on: false, fee: 70, free: 0,   days: '7–15 days', countries: [] },
+  pickup:  { on: true,  address: '' }        // '' = the store's address
+};
+export const SHIPPING = JSON.parse(JSON.stringify(SHIPPING_DEFAULTS));
+export const SHIP_METHODS = ['tn', 'express', 'intl', 'pickup'];
+export const LEGAL_OVR = {};
+export const RATE_MANUAL = [];   // currencies the owner prices by hand; the others follow the live rate   // { terms: { en, fr, ar }, privacy: …, refunds: …, notice: … } — the owner's wording
+export const BUNDLES = [];  // [{ id, name: { en, fr, ar }, items: [productId…], pct }]
+export const FLASH = {};    // { id, pct } — the flash sale of the day, until midnight
+export const EXTRAS = {};   // { reviews: [{ name, stars, text, product? }], whatsapp: '216…' }
+/** A sale price: whole or half dinars, never below 0.5 DT. */
+export const salePrice = (base, pct) => Math.max(0.5, Math.round(base * (100 - pct) / 50) / 2);
+const SALE_END = '2026-12-01T00:00:00';
+const HOME_DEFAULTS = {
+  ticker: ['bo7', 'fc27', 'elden-ring', 'gta5', 'minecraft', 'wukong', 'nba2k26', 'steam-20', 'psn-20', 'valorant-20', 'efootball-1000', 'win11'],
+  picks: ['gta5', 'minecraft', 'tlou2', 'split-fiction', 'nba2k26', 'f1-2025'],
+  /* the owner's best sellers: ranked after what real orders of the last 30 days sold */
+  best: ['bo7', 'fc27', 'gta5', 'minecraft', 'steam-20', 'efootball-1000', 'valorant-20', 'psn-20', 'pubg-660', 'win11'],
+  bundles: [
+    { id: 'steam-starter', name: { en: 'Steam starter', fr: 'Pack Steam', ar: 'باقة Steam' }, items: ['elden-ring', 'steam-20'], pct: 10 },
+    { id: 'football-fan', name: { en: 'Football fan', fr: 'Fan de foot', ar: 'لعشّاق كرة القدم' }, items: ['fc27', 'efootball-1000'], pct: 10 },
+    { id: 'work-and-play', name: { en: 'Work and play', fr: 'Travail et jeu', ar: 'عمل ولعب' }, items: ['win11', 'nitro-1m'], pct: 15 }
+  ],
+  flash: { id: 'gta5', pct: 30 },
+  reviews: [],               // real reviews only: the owner adds them in the admin
+  /* approximate rates (1 TND in each currency); the owner keeps them up to date */
+  currencies: { EUR: 0.29, USD: 0.34, GBP: 0.25, SAR: 1.27, AED: 1.24, CAD: 0.47, MAD: 3.1 },
+  whatsapp: STORE.phone.replace(/\D/g, ''),
+  promo: {
+    on: true, link: 'deals', art: 'minecraft', code: 'TECH10', codePct: 10,
+    title: { en: 'Black Friday week', fr: 'Semaine du Black Friday', ar: 'أسبوع الجمعة السوداء' },
+    text: { en: 'Games, gift cards and software at their lowest prices of the year, until Cyber Monday. Add code TECH10 at checkout for 10% more.',
+            fr: 'Jeux, cartes cadeaux et logiciels au plus bas de l’année, jusqu’au Cyber Monday. Ajoutez le code TECH10 au paiement pour 10 % de plus.',
+            ar: 'الألعاب وبطاقات الهدايا والبرامج بأقل أسعار السنة حتى الاثنين الإلكتروني. أضف الرمز TECH10 عند الدفع لخصم إضافي 10٪.' },
+    cta: { en: 'Shop the deals', fr: 'Voir les promos', ar: 'تسوّق العروض' }
+  },
+  sales: {
+    'red-dead-redemption-2-37': { pct: 30, until: SALE_END }, 'baldurs-gate-3-2112': { pct: 25, until: SALE_END },
+    'forza-horizon-5-487': { pct: 20, until: SALE_END }, 'tekken-8-2084': { pct: 25, until: SALE_END },
+    'palworld-1676': { pct: 20, until: SALE_END }, 'battlefield-6-1382': { pct: 15, until: SALE_END },
+    'ghost-of-tsushima-directors-cut-1831': { pct: 20, until: SALE_END }, 'razer-gold-50-usd-535': { pct: 10, until: SALE_END },
+    'fortnite-2400-v-bucks-99': { pct: 15, until: SALE_END }, 'discord-nitro-1-year-515': { pct: 20, until: SALE_END },
+    'nord-vpn-1-month-518': { pct: 25, until: SALE_END }, 'pubg-mobile-1800-uc-458': { pct: 10, until: SALE_END }
+  }
+};
+export const homeDefaults = () => HOME_DEFAULTS;
+
+/* Sale prices replace the price everywhere (shop, basket, checkout); the old
+   price is kept as `was`. A sale past its end date simply doesn't apply. */
+function applySales(sales) {
+  reset(SALES, copy(sales));
+  const now = Date.now();
+  for (const p of PRODUCTS) {
+    const s = sales[p.id];
+    if (!s || !(s.pct >= 1 && s.pct <= 90) || (s.until && Date.parse(s.until) <= now)) continue;
+    p.was = p.price;
+    p.price = salePrice(p.price, s.pct);
+    p.sale = { pct: s.pct, until: s.until || null };
+  }
+}
 
 const refill = (arr, items) => arr.splice(0, arr.length, ...items);
 const reset = (obj, ...sources) => { for (const k of Object.keys(obj)) delete obj[k]; Object.assign(obj, ...sources); };
 
+/* A hosted copy with no edits saved in this browser starts from the owner's published record. */
+const HOSTED = typeof location !== 'undefined' && !['localhost', '127.0.0.1', '', '[::1]'].includes(location.hostname);
 export function loadAdmin() {
-  try { return JSON.parse(localStorage.getItem(ADMIN_KEY)) || {}; } catch { return {}; }
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(ADMIN_KEY)); } catch {}
+  return cleanAdmin(saved ?? (HOSTED ? PUBLISHED_RECORD : {}));
 }
 
 export function applyAdmin(a = {}) {
+  a = cleanAdmin(a);   // a damaged save or import can't break the shop
   const removed = new Set(a.removed || []);
   const edited = a.edited || {};
   const shipped = SHIPPED.PRODUCTS.map(p => (edited[p.id] ? { ...p, ...edited[p.id] } : p));
@@ -1033,7 +1211,42 @@ export function applyAdmin(a = {}) {
   reset(CAT_NAMES, a.catNames || {});
   refill(HERO, a.hero || SHIPPED.HERO);
   refill(NEW_DROPS, a.drops || SHIPPED.NEW_DROPS);
-  reset(PAGE_SECTIONS, { hidden: { ...(a.hidden || {}) }, titles: copy(a.titles || {}), shelf: [...(a.shelf || [])] });
+  reset(PAGE_SECTIONS, { hidden: { ...(a.hidden || {}) }, titles: copy(a.titles || {}), shelf: [...(a.shelf || [])],
+    ticker: [...(a.ticker || HOME_DEFAULTS.ticker)], picks: [...(a.picks || HOME_DEFAULTS.picks)], best: [...(a.best || HOME_DEFAULTS.best)] });
+  reset(PROMO, copy(HOME_DEFAULTS.promo), a.promo ? copy(a.promo) : {});
+  applySales(a.sales || HOME_DEFAULTS.sales);
+  refill(BUNDLES, copy(a.bundles || HOME_DEFAULTS.bundles));
+  reset(TEXTS, copy(a.texts || {}));
+  reset(CURRENCY_RATES, copy(a.currencies || HOME_DEFAULTS.currencies));
+  reset(LEGAL_OVR, copy(a.legal || {}));
+  refill(RATE_MANUAL, [...(a.ratesManual || [])]);
+  reset(FAQ_OVR, copy(a.faq || {}));
+  reset(SITE, a.site ? copy(a.site) : {});
+  reset(ORDER_STATUS, { ...(a.orderStatus || {}) });
+  reset(ORDER_TRACK, copy(a.tracking || {}));
+  reset(SHIPPING, ...Object.keys(SHIPPING_DEFAULTS).map(k => ({ [k]: { ...SHIPPING_DEFAULTS[k], ...(a.shipping?.[k] || {}) } })));
+  // store details and payment methods: the shipped ones with the owner's changes
+  reset(STORE, copy(STORE_SHIPPED), a.store ? copy(a.store) : {});
+  const pay = a.payments || {};
+  reset(PAYMENT_FEES, ...Object.keys(FEES_SHIPPED).map(m => ({ [m]: pay[m]?.fee ? copy(pay[m].fee) : copy(FEES_SHIPPED[m]) })));
+  const on = METHODS_SHIPPED.filter(m => pay[m]?.on !== false);
+  refill(PAYMENT_METHODS, on.length ? on : [METHODS_SHIPPED[0]]);
+  applyFlash(a.flash || HOME_DEFAULTS.flash);
+  reset(EXTRAS, { reviews: copy(a.reviews || HOME_DEFAULTS.reviews), whatsapp: a.whatsapp ?? HOME_DEFAULTS.whatsapp, google: copy(a.google || {}) });
+}
+
+/* The flash sale of the day: one product at a big discount until midnight,
+   every day, while its home section is switched on. It wins over a smaller sale. */
+const nextMidnight = () => { const d = new Date(); d.setHours(24, 0, 0, 0); return d.toISOString(); };
+function applyFlash(f) {
+  reset(FLASH, f?.id ? copy(f) : {});
+  const p = PRODUCTS.find(x => x.id === FLASH.id);
+  if (!p || !(FLASH.pct >= 1 && FLASH.pct <= 90) || PAGE_SECTIONS.hidden.flash) return;
+  if (p.sale && p.sale.pct >= FLASH.pct) { p.sale.flash = true; return; }
+  const base = p.was ?? p.price;
+  p.was = base;
+  p.price = salePrice(base, FLASH.pct);
+  p.sale = { pct: FLASH.pct, until: nextMidnight(), flash: true };
 }
 
 /** The shipped catalogue, for the dashboard's "reset" and "edited" markers. */

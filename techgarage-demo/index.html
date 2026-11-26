@@ -3,12 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- security: only this site's own scripts run; no plugins, no foreign forms or frames
+     (scripts/build_single_file.py swaps 'self' for the inline script's hash) -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://open.er-api.com https://places.googleapis.com https://vercel.com https://*.blob.vercel-storage.com; media-src 'self' https: data: blob:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; worker-src 'none'; manifest-src 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
 <title>TechGarage</title>
-<meta name="description" content="Design demo for techgarage.tn — PC games, gift cards, mobile top-ups and software, delivered digitally in Tunisia.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/app.css?v=20261124t">
+<meta name="description" content="TechGarage — PC and console games, gift cards, mobile top-ups and software licences, delivered digitally in minutes. Pay by card, D17, Ooredoo Pay or transfer.">
+<meta name="theme-color" content="#1c1e25">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TechGarage">
+<meta property="og:title" content="TechGarage — games, gift cards and top-ups">
+<meta property="og:description" content="Digital games, gift cards, mobile top-ups and software, delivered in minutes.">
+<meta property="og:image" content="assets/products/call-of-duty-black-ops-7.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icons/app-192.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"OnlineStore","name":"TechGarage","url":"https://techgarage.tn/","logo":"https://techgarage.tn/assets/icons/app-512.png","email":"Commercial@techgarage.site","telephone":"+216 58 578 111","address":{"@type":"PostalAddress","streetAddress":"Rue Hssan Achoura","postalCode":"5100","addressLocality":"Mahdia","addressCountry":"TN"},"currenciesAccepted":"TND","paymentAccepted":"Credit card, D17, Ooredoo Pay, Bank transfer"}</script>
+<!-- the first banner picture: fetched straight away, not after the scripts run -->
+<link rel="preload" as="image" href="assets/products/call-of-duty-black-ops-7.webp" fetchpriority="high">
+<link rel="stylesheet" href="assets/css/app.css?v=20261129d">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2338a699'/%3E%3Cpath d='M9 11h14M16 11v12' stroke='%23062' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -72,7 +86,7 @@
       <header class="topbar">
         <div class="search" id="searchWrap">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.4-3.4"/></svg>
-          <input id="search" type="search" placeholder="Search the store" autocomplete="off" aria-label="Search products" data-i18n-attr="placeholder:search.ph,aria-label:search.label" aria-expanded="false" aria-controls="results">
+          <input id="search" type="search" role="combobox" aria-autocomplete="list" placeholder="Search the store" autocomplete="off" aria-label="Search products" data-i18n-attr="placeholder:search.ph,aria-label:search.label" aria-expanded="false" aria-controls="results">
           <kbd>/</kbd>
           <div class="results" id="results" role="listbox" aria-label="Search results" data-i18n-attr="aria-label:search.results"></div>
         </div>
@@ -83,9 +97,9 @@
         <div class="mega" id="mega" role="menu" hidden></div>
 
         <div class="topbar-right">
-          <button class="icon-btn lang-btn" id="langBtn" aria-label="Language" aria-expanded="false" data-i18n-attr="aria-label:lang.label">
+          <button class="icon-btn lang-btn" id="langBtn" aria-expanded="false">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
-            <span class="lang-code" id="langCode">EN</span>
+            <span class="lang-code" id="langCode">EN</span><span class="sr" data-i18n="lang.label">Language</span>
           </button>
           <button class="icon-btn" id="bell" aria-label="Notifications" aria-expanded="false" data-i18n-attr="aria-label:bell">
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.5a6 6 0 1 0-12 0c0 6-2.2 7.5-2.2 7.5h16.4S18 14.5 18 8.5"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/></svg>
@@ -94,7 +108,7 @@
 
           <button class="account" id="accountBtn" aria-expanded="false">
             <img id="accountAvatar" src="" alt="">
-            <span class="who"><b id="accountName"></b><span id="accountHandle"></span></span>
+            <span class="who"><b id="accountName"></b><span id="accountHandle"></span></span><span class="sr" data-i18n="rail.profile">Profile</span>
             <svg class="chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
           </button>
 
@@ -130,6 +144,7 @@
   </div><!-- /browser -->
 </div><!-- /stage -->
 
-<script type="module" src="assets/js/app.js?v=20261124t"></script>
+<!-- smooth scrolling (Lenis) and scroll-linked motion (GSAP + ScrollTrigger), kept locally -->
+<script type="module" src="assets/js/app.js?v=20261129d"></script>
 </body>
 </html>
